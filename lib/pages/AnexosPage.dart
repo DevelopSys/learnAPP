@@ -218,7 +218,7 @@ class _AnexosConveniosTabState extends State<_AnexosConveniosTab> {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         setState(() {
-          this.empresas =
+          empresas =
               data.map((json) => AnexoCompanyItem.fromJson(json)).toList();
           cargando = false;
         });

@@ -11,6 +11,7 @@ import 'package:learnapp/pages/loginPageState.dart';
 import 'package:learnapp/pages/practicasPage.dart';
 import 'package:learnapp/pages/resultadosPage.dart';
 import 'package:learnapp/pages/tutoresPage.dart';
+import 'package:learnapp/pages/settingsPage.dart';
 
 class Maindashboard extends StatefulWidget {
   const Maindashboard({super.key});
@@ -136,6 +137,17 @@ PracticasPage(jwt: jwt),
       appBar: AppBar(
         title: Text(titles[selectedIndex]),
         actions: [
+          IconButton(
+            tooltip: 'Configuración general',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => InfoCoursePage(jwt: jwt),
+                ),
+              );
+            },
+            icon: const Icon(Icons.settings_outlined),
+          ),
           IconButton(
             onPressed: () {
               MyApp.of(context).toggleTheme();
