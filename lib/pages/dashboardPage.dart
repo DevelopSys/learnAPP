@@ -7,7 +7,7 @@ import 'package:learnapp/main.dart';
 import 'package:learnapp/pages/AnexosPage.dart';
 import 'package:learnapp/pages/alumnosPage.dart';
 import 'package:learnapp/pages/empresaPage.dart';
-import 'package:learnapp/pages/loginPageState.dart';
+import 'package:learnapp/pages/loginPage.dart';
 import 'package:learnapp/pages/practicasPage.dart';
 import 'package:learnapp/pages/resultadosPage.dart';
 import 'package:learnapp/pages/tutoresPage.dart';

@@ -1,8 +1,33 @@
-import 'package:flutter/material.dart';
-import 'package:learnapp/main.dart';
+import 'dart:convert';
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
+import 'package:learnapp/main.dart';
+import 'package:learnapp/pages/dashboardPage.dart';
+import 'package:learnapp/pages/registroPage.dart';
+
+
+class LoginPageST extends StatefulWidget {
+  const LoginPageST({super.key});
+
+  @override
+  State<LoginPageST> createState() => LoginState();
+}
+
+class LoginState extends State<LoginPageST> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passController = TextEditingController();
+  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
+
+  bool isLoading = false;
+  bool isGoogleLoading = false;
+  String? errorMessage;
 
   Color surfaceColor(BuildContext context) =>
       Theme.of(context).colorScheme.surface;
@@ -16,6 +41,159 @@ class LoginPage extends StatelessWidget {
       Theme.of(context).brightness == Brightness.dark
           ? Colors.white.withOpacity(0.7)
           : Colors.black.withOpacity(0.65);
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passController.dispose();
+    super.dispose();
+  }
+
+  Future<void> login() async {
+    final email = emailController.text.trim();
+    final password = passController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        errorMessage = 'Introduce el email y la contraseña';
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final url = Uri.parse('http://localhost:8080/api/auth/login');
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'username': email,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final token = data['token'];
+
+        if (token == null || token.toString().isEmpty) {
+          setState(() {
+            errorMessage = 'La respuesta no contiene un token válido';
+          });
+          return;
+        }
+
+        await secureStorage.write(key: 'jwt', value: token.toString());
+
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Maindashboard()),
+        );
+      } else if (response.statusCode == 401) {
+        setState(() {
+          errorMessage = 'Credenciales incorrectas';
+        });
+      } else {
+        setState(() {
+          errorMessage = 'Error al iniciar sesión (${response.statusCode})';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'No se pudo conectar con el servidor';
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> vincularGoogle() async {
+    setState(() {
+      isGoogleLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final jwt = await secureStorage.read(key: 'jwt');
+
+      if (jwt == null || jwt.isEmpty) {
+        setState(() {
+          errorMessage =
+          'Primero inicia sesión con tu usuario y contraseña para vincular Google';
+        });
+        return;
+      }
+
+      await _googleSignIn.signOut();
+      final GoogleSignInAccount? account = await _googleSignIn.signIn();
+
+      if (account == null) {
+        setState(() {
+          errorMessage = 'Se canceló el acceso con Google';
+        });
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('http://localhost:8080/api/auth/google/link'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $jwt',
+        },
+        body: jsonEncode({
+          'googleId': account.id,
+          'googleEmail': account.email,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cuenta Google vinculada correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else if (response.statusCode == 401) {
+        setState(() {
+          errorMessage = 'Tu sesión ha caducado. Vuelve a iniciar sesión';
+        });
+      } else if (response.statusCode == 409) {
+        setState(() {
+          errorMessage = response.body.isNotEmpty
+              ? response.body
+              : 'Esa cuenta Google ya está vinculada a otro usuario';
+        });
+      } else {
+        setState(() {
+          errorMessage = response.body.isNotEmpty
+              ? response.body
+              : 'Error al vincular Google (${response.statusCode})';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'No se pudo completar la vinculación con Google';
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        isGoogleLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +238,9 @@ class LoginPage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Expanded(child: Image.asset('assets/images/logo.jpeg')),
+                      Expanded(
+                        child: Image.asset('assets/images/logo.jpeg'),
+                      ),
                     ],
                   ),
                 ),
@@ -98,20 +278,32 @@ class LoginPage extends StatelessWidget {
                             const SizedBox(height: 24),
                             const Text('Email'),
                             const SizedBox(height: 8),
-                            const TextField(
-                              decoration: InputDecoration(
+                            TextField(
+                              controller: emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(
                                 hintText: 'Introduce tu mail',
                               ),
                             ),
                             const SizedBox(height: 16),
                             const Text('Password'),
                             const SizedBox(height: 8),
-                            const TextField(
+                            TextField(
+                              controller: passController,
                               obscureText: true,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 hintText: 'Introduce tu pass',
                               ),
                             ),
+                            const SizedBox(height: 12),
+                            if (errorMessage != null)
+                              Text(
+                                errorMessage!,
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             const SizedBox(height: 20),
                             SizedBox(
                               width: double.infinity,
@@ -124,10 +316,21 @@ class LoginPage extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                onPressed: () {},
-                                child: const Text(
+                                onPressed: isLoading ? null : login,
+                                child: isLoading
+                                    ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.4,
+                                    color: Colors.black,
+                                  ),
+                                )
+                                    : const Text(
                                   'Sign in',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
@@ -147,10 +350,51 @@ class LoginPage extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  side: BorderSide(color: borderColor(context)),
+                                ),
+                                onPressed: isGoogleLoading ? null : vincularGoogle,
+                                icon: isGoogleLoading
+                                    ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                    : const Icon(Icons.account_circle_outlined),
+                                label: Text(
+                                  isGoogleLoading
+                                      ? 'Vinculando cuenta Google...'
+                                      : 'Vincular cuenta Google',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Primero entra con tu usuario y contraseña. Después puedes vincular la cuenta Google que usarás para servicios externos.',
+                              style: TextStyle(
+                                color: mutedTextColor(context),
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
                             Center(
                               child: TextButton(
-                                onPressed: () {},
-                                child: const Text('¿Olvidaste la contraseña?'),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const RegisterPage()),
+                                  );
+                                },
+                                child: const Text('Crear cuenta'),
                               ),
                             ),
                           ],

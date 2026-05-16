@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:learnapp/pages/dashboardPage.dart';
 import 'package:learnapp/pages/loginPage.dart';
-import 'package:learnapp/pages/loginPageState.dart';
+import 'package:learnapp/theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-const Color accentColor = Color(0xFF3ECF8E);
+
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

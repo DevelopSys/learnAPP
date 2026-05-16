@@ -102,8 +102,7 @@ class PracticeItem {
     final agreement = company?['agreement'] as Map<String, dynamic>?;
 
     final studentsJson =
-        (json['students'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ??
-            [];
+        (json['students'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
 
     final students =
     studentsJson.map((s) => PracticeStudentItem.fromJson(s)).toList();
@@ -240,7 +239,10 @@ class _AnexosConveniosTabState extends State<_AnexosConveniosTab> {
 
   void _showSuccess(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: accentColor),
+      const SnackBar(
+        content: Text('Documento descargado correctamente'),
+        backgroundColor: accentColor,
+      ),
     );
   }
 
@@ -333,11 +335,11 @@ class _AnexosConveniosTabState extends State<_AnexosConveniosTab> {
       anchor.remove();
       web.URL.revokeObjectURL(downloadUrl);
 
-      _showSuccess('Documento descargado correctamente');
+      _showSuccess('ok');
     } else {
       _showError(
         response.body.isNotEmpty
-            ? 'Error al descargar archivo AQUI: ${response.body}'
+            ? 'Error al descargar archivo: ${response.body}'
             : 'Error al descargar archivo: ${response.statusCode}',
       );
     }
@@ -714,16 +716,6 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
       String tipo,
       String endpointSuffix,
       ) async {
-    if (tipo == 'all') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('La descarga conjunta está en desarrollo'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
     setState(() {
       descargandoPracticeId = p.id;
       descargandoTipo = tipo;
@@ -770,7 +762,7 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
         );
       } else if (tipo == '8') {
         url = Uri.parse(
-          'http://localhost:8080/api/practices/${p.id}/anexo-seguimiento?studentId=${student.id}',
+          'http://localhost:8080/api/practices/${p.id}/anexo8?studentId=${student.id}',
         );
       } else if (tipo == '9') {
         url = Uri.parse(
@@ -789,92 +781,6 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
       );
     } catch (e) {
       _showError('Error de conexión al descargar el anexo $tipo: $e');
-    } finally {
-      setState(() {
-        descargandoPracticeId = null;
-        descargandoTipo = null;
-        descargandoStudentId = null;
-      });
-    }
-  }
-
-  Future<void> _descargarAnexo8TodosLosAlumnos(PracticeItem p) async {
-    if (p.students.isEmpty) {
-      _showError('La práctica no tiene alumnos asignados');
-      return;
-    }
-
-    setState(() {
-      descargandoPracticeId = p.id;
-      descargandoTipo = '8_all';
-      descargandoStudentId = null;
-    });
-
-    try {
-      for (final student in p.students) {
-        final url = Uri.parse(
-          'http://localhost:8080/api/practices/${p.id}/anexo-seguimiento?studentId=${student.id}',
-        );
-
-        await _descargarArchivoBytes(
-          url: url,
-          fallbackFileName:
-          'practica_${p.id}_alumno_${student.id}_anexo_8.docx',
-          fallbackContentType:
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        );
-
-        await Future.delayed(const Duration(milliseconds: 250));
-      }
-
-      _showSuccess('Anexo 8 descargado para todos los alumnos');
-    } catch (e) {
-      _showError(
-        'Error al descargar el Anexo 8 para todos los alumnos: $e',
-      );
-    } finally {
-      setState(() {
-        descargandoPracticeId = null;
-        descargandoTipo = null;
-        descargandoStudentId = null;
-      });
-    }
-  }
-
-  Future<void> _descargarAnexo9TodosLosAlumnos(PracticeItem p) async {
-    if (p.students.isEmpty) {
-      _showError('La práctica no tiene alumnos asignados');
-      return;
-    }
-
-    setState(() {
-      descargandoPracticeId = p.id;
-      descargandoTipo = '9_all';
-      descargandoStudentId = null;
-    });
-
-    try {
-      for (final student in p.students) {
-        final url = Uri.parse(
-          'http://localhost:8080/api/practices/${p.id}/anexo9?studentId=${student.id}',
-        );
-
-        await _descargarArchivoBytes(
-          url: url,
-          fallbackFileName:
-          'practica_${p.id}_alumno_${student.id}_anexo_9.docx',
-          fallbackContentType:
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        );
-
-        await Future.delayed(const Duration(milliseconds: 250));
-      }
-
-      _showSuccess('Anexo 9 descargado para todos los alumnos');
-    } catch (e) {
-      _showError(
-        'Error al descargar el Anexo 9 para todos los alumnos: $e',
-      );
     } finally {
       setState(() {
         descargandoPracticeId = null;
@@ -979,80 +885,6 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
         ),
       )
           : Text(label),
-    );
-  }
-
-  Widget _buildBotonAnexo8General({
-    required PracticeItem p,
-    Color color = accentColor,
-    Color textColor = Colors.black,
-  }) {
-    final isLoading = descargandoPracticeId == p.id &&
-        descargandoTipo == '8_all' &&
-        descargandoStudentId == null;
-
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: textColor,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      ),
-      onPressed: isLoading
-          ? null
-          : () async {
-        if (p.students.isEmpty) {
-          _showError('La práctica no tiene alumnos asignados');
-          return;
-        }
-        await _descargarAnexo8TodosLosAlumnos(p);
-      },
-      child: isLoading
-          ? SizedBox(
-        width: 16,
-        height: 16,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(textColor),
-        ),
-      )
-          : const Text('Anexo 8'),
-    );
-  }
-
-  Widget _buildBotonAnexo9General({
-    required PracticeItem p,
-    Color color = accentColor,
-    Color textColor = Colors.black,
-  }) {
-    final isLoading = descargandoPracticeId == p.id &&
-        descargandoTipo == '9_all' &&
-        descargandoStudentId == null;
-
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: textColor,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      ),
-      onPressed: isLoading
-          ? null
-          : () async {
-        if (p.students.isEmpty) {
-          _showError('La práctica no tiene alumnos asignados');
-          return;
-        }
-        await _descargarAnexo9TodosLosAlumnos(p);
-      },
-      child: isLoading
-          ? SizedBox(
-        width: 16,
-        height: 16,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(textColor),
-        ),
-      )
-          : const Text('Anexo 9'),
     );
   }
 
@@ -1190,17 +1022,14 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
                         children: [
                           _buildBotonAnexo1(p: p),
 
-                          // Anexo 4
-                          if (unSoloAlumno || (variosAlumnos && expandida))
-                            _buildBotonPractica(
-                              p: p,
-                              tipo: '4',
-                              label: 'Anexo 4',
-                              endpointSuffix: 'anexo4',
-                              color: Colors.blue.shade100,
-                            ),
+                          _buildBotonPractica(
+                            p: p,
+                            tipo: '4',
+                            label: 'Anexo 4',
+                            endpointSuffix: 'anexo4',
+                            color: Colors.blue.shade100,
+                          ),
 
-                          // Anexo 6 (Para alumno único, sino dentro del desplegable)
                           if (unSoloAlumno && alumnoUnico != null)
                             _buildBotonAlumno(
                               p: p,
@@ -1210,25 +1039,22 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
                               color: Colors.purple.shade100,
                             ),
 
-                          // Anexo 8 General (Hace el bucle por todos los alumnos)
-                          _buildBotonAnexo8General(
-                            p: p,
-                            color: Colors.teal.shade100,
-                          ),
-
-                          // Anexo 9 General (Hace el bucle por todos los alumnos)
-                          _buildBotonAnexo9General(
-                            p: p,
-                            color: Colors.orange.shade100,
-                          ),
-
-                          // Todos (En desarrollo en _descargarAnexoPractica)
-                          if (unSoloAlumno || (variosAlumnos && expandida))
-                            _buildBotonPractica(
+                          if (unSoloAlumno && alumnoUnico != null)
+                            _buildBotonAlumno(
                               p: p,
-                              tipo: 'all',
-                              label: 'Todos',
-                              endpointSuffix: 'anexos',
+                              student: alumnoUnico,
+                              tipo: '8',
+                              label: 'Anexo 8',
+                              color: Colors.teal.shade100,
+                            ),
+
+                          if (unSoloAlumno && alumnoUnico != null)
+                            _buildBotonAlumno(
+                              p: p,
+                              student: alumnoUnico,
+                              tipo: '9',
+                              label: 'Anexo 9',
+                              color: Colors.orange.shade100,
                             ),
                         ],
                       ),
@@ -1237,7 +1063,7 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
                           padding: const EdgeInsets.only(top: 10),
                           child: Text(
                             expandida
-                                ? 'Cada alumno tiene sus anexos (6, 8 y 9)'
+                                ? 'Cada alumno tiene sus anexos 6, 8 y 9'
                                 : 'Despliega la fila para anexos individuales de cada alumno',
                             textAlign: TextAlign.right,
                             style: TextStyle(
@@ -1256,9 +1082,8 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
               child: Column(
-                children: p.students
-                    .map((s) => _buildFilaAlumnoExpandido(p, s))
-                    .toList(),
+                children:
+                p.students.map((s) => _buildFilaAlumnoExpandido(p, s)).toList(),
               ),
             ),
         ],
@@ -1327,7 +1152,7 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Filtra por ciclo y despliega una práctica con varios alumnos para descargar el Anexo 6, el Anexo 8 y el Anexo 9 de cada uno.',
+                          'Filtra por ciclo y despliega una práctica con varios alumnos para descargar el Anexo 6, el Anexo 8 y el Anexo 9 de cada alumno.',
                           style: TextStyle(color: mutedTextColor(context)),
                         ),
                       ],
