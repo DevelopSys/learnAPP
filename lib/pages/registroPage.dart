@@ -23,7 +23,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
-    clientId: '101183745599-a85854da3bal453ia1m7rmp86dlhbvsd.apps.googleusercontent.com',  // ← añade esto
+    clientId: '274784370368-l4cuagutrl9ilnjc0ur80lut3mpeb55j.apps.googleusercontent.com',
   );
 
   bool isLoading = false;
@@ -94,6 +94,8 @@ class _RegisterPageState extends State<RegisterPage> {
       });
     } catch (e) {
       setState(() {
+        print('GOOGLE ERROR DETALLADO: $e');
+
         errorMessage = 'No se pudo conectar con Google';
       });
     } finally {
