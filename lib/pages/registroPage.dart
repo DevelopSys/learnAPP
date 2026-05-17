@@ -23,6 +23,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    clientId: '101183745599-a85854da3bal453ia1m7rmp86dlhbvsd.apps.googleusercontent.com',  // ← añade esto
   );
 
   bool isLoading = false;
