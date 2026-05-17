@@ -74,7 +74,7 @@ class LoginState extends State<LoginPageST> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'username': email,
+          'email': email,
           'password': password,
         }),
       );
