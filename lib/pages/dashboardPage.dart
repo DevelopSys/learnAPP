@@ -7,11 +7,13 @@ import 'package:learnapp/main.dart';
 import 'package:learnapp/pages/AnexosPage.dart';
 import 'package:learnapp/pages/alumnosPage.dart';
 import 'package:learnapp/pages/empresaPage.dart';
-import 'package:learnapp/pages/loginPage.dart';
+import 'package:learnapp/pages/enviosAnexosPage.dart';
 import 'package:learnapp/pages/practicasPage.dart';
 import 'package:learnapp/pages/resultadosPage.dart';
-import 'package:learnapp/pages/tutoresPage.dart';
 import 'package:learnapp/pages/settingsPage.dart';
+import 'package:learnapp/pages/tutoresPage.dart';
+
+import 'loginPage.dart';
 
 class Maindashboard extends StatefulWidget {
   const Maindashboard({super.key});
@@ -37,7 +39,7 @@ class _MainPageState extends State<Maindashboard> {
     'Tutores',
     'Prácticas',
     'Anexos',
-
+    'Envios',
   ];
 
   @override
@@ -67,7 +69,7 @@ class _MainPageState extends State<Maindashboard> {
     final data = jsonDecode(meResponse.body);
 
     setState(() {
-      usernname =  data["username"];
+      usernname = data["username"];
       role = data["role"];
       isAdmin = role == 'ADMIN';
     });
@@ -124,13 +126,13 @@ class _MainPageState extends State<Maindashboard> {
           ),
         ),
       ),
-      AlumnosPage(jwt: jwt,),
-      EmpresasPage(jwt: jwt,),
-      ResultadosAprendizajePage(jwt: jwt,),
+      AlumnosPage(jwt: jwt),
+      EmpresasPage(jwt: jwt),
+      ResultadosAprendizajePage(jwt: jwt),
       TutoresPage(jwt: jwt),
-PracticasPage(jwt: jwt),
-      AnexosEmpresasPage(jwt: jwt)
-
+      PracticasPage(jwt: jwt),
+      AnexosEmpresasPage(jwt: jwt),
+      EnvioPracticasPage(jwt: jwt)
     ];
 
     return Scaffold(
@@ -138,23 +140,22 @@ PracticasPage(jwt: jwt),
         title: Text(titles[selectedIndex]),
         actions: [
           IconButton(
-            tooltip: 'Configuración general',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => InfoCoursePage(jwt: jwt),
-                ),
-              );
-            },
-            icon: const Icon(Icons.settings_outlined),
-          ),
-          IconButton(
             onPressed: () {
               MyApp.of(context).toggleTheme();
             },
             icon: Icon(
               isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
             ),
+          ),
+          IconButton(
+            tooltip: 'Ajustes',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => InfoCoursePage(jwt: jwt)),
+              );
+            },
+            icon: const Icon(Icons.settings),
           ),
           IconButton(
             tooltip: 'Cerrar sesión',
@@ -242,7 +243,12 @@ PracticasPage(jwt: jwt),
               selected: selectedIndex == 6,
               onTap: () => selectPage(6),
             ),
-
+            ListTile(
+              leading: const Icon(Icons.newspaper),
+              title: const Text('Envios'),
+              selected: selectedIndex == 7,
+              onTap: () => selectPage(7),
+            ),
           ],
         ),
       ),
