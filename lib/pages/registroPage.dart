@@ -5,6 +5,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:learnapp/main.dart';
 
+import '../model/course.dart';
+
 const Color accentColor = Color(0xFF3ECF8E);
 
 class RegisterPage extends StatefulWidget {
@@ -23,17 +25,24 @@ class _RegisterPageState extends State<RegisterPage> {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
-    clientId: '274784370368-l4cuagutrl9ilnjc0ur80lut3mpeb55j.apps.googleusercontent.com',
+    clientId:
+    '274784370368-l4cuagutrl9ilnjc0ur80lut3mpeb55j.apps.googleusercontent.com',
   );
 
   bool isLoading = false;
   bool isGoogleLoading = false;
+  bool isLoadingCourses = false;
+
   String? errorMessage;
   String? successMessage;
 
   String? googleId;
   String? googleEmail;
   String? googleDisplayName;
+
+  String selectedRole = 'ADMINISTRACION';
+  List<Course> availableCourses = [];
+  List<int> selectedCourseIds = [];
 
   Color surfaceColor(BuildContext context) =>
       Theme.of(context).colorScheme.surface;
@@ -49,12 +58,70 @@ class _RegisterPageState extends State<RegisterPage> {
           : Colors.black.withOpacity(0.65);
 
   @override
+  void initState() {
+    super.initState();
+    loadCourses();
+  }
+
+  @override
   void dispose() {
     usernameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> loadCourses() async {
+    setState(() {
+      isLoadingCourses = true;
+      errorMessage = null;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:8080/api/public/courses'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('STATUS COURSES: ${response.statusCode}');
+      print('BODY COURSES: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded is List) {
+          final courses = decoded
+              .map((e) => Course.fromJson(e as Map<String, dynamic>))
+              .toList();
+
+          setState(() {
+            availableCourses = courses;
+          });
+        } else {
+          setState(() {
+            errorMessage = 'La respuesta de cursos no tiene formato de lista';
+          });
+        }
+      } else {
+        setState(() {
+          errorMessage =
+          'Error al cargar ciclos (${response.statusCode}): ${response.body}';
+        });
+      }
+    } catch (e) {
+      print('ERROR LOAD COURSES: $e');
+      setState(() {
+        errorMessage = 'Error al cargar ciclos: $e';
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        isLoadingCourses = false;
+      });
+    }
   }
 
   Future<void> seleccionarCuentaGoogle() async {
@@ -94,8 +161,6 @@ class _RegisterPageState extends State<RegisterPage> {
       });
     } catch (e) {
       setState(() {
-        print('GOOGLE ERROR DETALLADO: $e');
-
         errorMessage = 'No se pudo conectar con Google';
       });
     } finally {
@@ -112,6 +177,18 @@ class _RegisterPageState extends State<RegisterPage> {
       googleEmail = null;
       googleDisplayName = null;
       successMessage = 'Cuenta Google desvinculada del formulario';
+    });
+  }
+
+  void toggleCourseSelection(int courseId, bool selected) {
+    setState(() {
+      if (selected) {
+        if (!selectedCourseIds.contains(courseId)) {
+          selectedCourseIds.add(courseId);
+        }
+      } else {
+        selectedCourseIds.remove(courseId);
+      }
     });
   }
 
@@ -148,6 +225,15 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    if (selectedRole == 'COORDINADOR' && selectedCourseIds.isEmpty) {
+      setState(() {
+        errorMessage =
+        'Selecciona al menos un ciclo si la cuenta es de coordinador';
+        successMessage = null;
+      });
+      return;
+    }
+
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -164,12 +250,12 @@ class _RegisterPageState extends State<RegisterPage> {
           'username': username,
           'email': email,
           'password': password,
-          'role': 'USER',
+          'role': selectedRole,
+          'courseIds': selectedRole == 'COORDINADOR' ? selectedCourseIds : [],
           'googleId': googleId,
           'googleEmail': googleEmail,
           'googleLinked': googleEmail != null && googleEmail!.isNotEmpty,
-          'authProvider':
-          googleEmail != null && googleEmail!.isNotEmpty
+          'authProvider': googleEmail != null && googleEmail!.isNotEmpty
               ? 'LOCAL_GOOGLE'
               : 'LOCAL',
         }),
@@ -206,6 +292,77 @@ class _RegisterPageState extends State<RegisterPage> {
         isLoading = false;
       });
     }
+  }
+
+  Widget buildCourseSelector(BuildContext context) {
+    if (selectedRole != 'COORDINADOR') {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        const Text('Ciclos asignados'),
+        const SizedBox(height: 8),
+        Text(
+          'Selecciona los ciclos de los que será coordinador',
+          style: TextStyle(
+            color: mutedTextColor(context),
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (isLoadingCourses)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: LinearProgressIndicator(),
+          )
+        else if (availableCourses.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: borderColor(context)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'No hay ciclos disponibles',
+              style: TextStyle(color: mutedTextColor(context)),
+            ),
+          )
+        else
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: borderColor(context)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: availableCourses.map((course) {
+                final selected = selectedCourseIds.contains(course.id);
+                final label = course.acronym.trim().isNotEmpty
+                    ? '${course.acronym} · ${course.name}'
+                    : course.name;
+
+                return FilterChip(
+                  label: Text(label),
+                  selected: selected,
+                  selectedColor: accentColor.withOpacity(0.25),
+                  checkmarkColor: Colors.black,
+                  side: BorderSide(color: borderColor(context)),
+                  onSelected: (value) {
+                    toggleCourseSelection(course.id, value);
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+      ],
+    );
   }
 
   @override
@@ -263,7 +420,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 460),
+                      constraints: const BoxConstraints(maxWidth: 520),
                       child: Container(
                         padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
@@ -283,7 +440,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Crea una cuenta y, si quieres, déjala asociada a Google desde el principio',
+                              'Crea una cuenta e indica si pertenece a administración o a coordinación. Si es coordinador, podrás asignarle sus ciclos desde el alta.',
                               style: TextStyle(
                                 color: mutedTextColor(context),
                                 fontSize: 14,
@@ -328,6 +485,35 @@ class _RegisterPageState extends State<RegisterPage> {
                                 hintText: 'Repite tu contraseña',
                               ),
                             ),
+                            const SizedBox(height: 16),
+                            const Text('Tipo de cuenta'),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: selectedRole,
+                              decoration: const InputDecoration(
+                                hintText: 'Selecciona el tipo de cuenta',
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'ADMINISTRACION',
+                                  child: Text('Administración'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'COORDINADOR',
+                                  child: Text('Coordinador'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setState(() {
+                                  selectedRole = value;
+                                  if (selectedRole != 'COORDINADOR') {
+                                    selectedCourseIds.clear();
+                                  }
+                                });
+                              },
+                            ),
+                            buildCourseSelector(context),
                             const SizedBox(height: 18),
                             Row(
                               children: [
