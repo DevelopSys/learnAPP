@@ -11,6 +11,16 @@ import '../model/course.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
+class ApiConfig {
+  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
+  static const String apiPrefix = '/api';
+
+  static String get learningResults => '$baseUrl$apiPrefix/learning-results';
+  static String get courses => '$baseUrl$apiPrefix/courses';
+  static String get learningResultsUpload => '$baseUrl$apiPrefix/learning-results/upload';
+  static String get learningResultsTemplate => '$baseUrl$apiPrefix/learning-results/template';
+}
+
 class LearningResultItem {
   final int id;
   final String subjectCode;
@@ -154,7 +164,7 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/learning-results');
+      final url = Uri.parse(ApiConfig.learningResults);
 
       final response = await http.get(
         url,
@@ -208,7 +218,7 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/courses');
+      final url = Uri.parse(ApiConfig.courses);
 
       final response = await http.get(
         url,
@@ -310,7 +320,7 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/learning-results/$id');
+      final url = Uri.parse('${ApiConfig.learningResults}/$id');
 
       final response = await http.delete(
         url,
@@ -491,7 +501,7 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
 
     try {
       final url =
-      Uri.parse('http://localhost:8080/api/learning-results/${item.id}');
+      Uri.parse('${ApiConfig.learningResults}/${item.id}');
 
       final body = jsonEncode({
         'subjectCode': subjectCodeController.text.trim(),
@@ -795,7 +805,7 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
   }
 
   Future<void> cargarCursos() async {
-    final url = Uri.parse('http://localhost:8080/api/courses');
+    final url = Uri.parse(ApiConfig.courses);
 
     final response = await http.get(
       url,
@@ -818,7 +828,7 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
 
   Future<void> guardarResultado() async {
     if (_formKey.currentState!.validate()) {
-      final url = Uri.parse('http://localhost:8080/api/learning-results');
+      final url = Uri.parse(ApiConfig.learningResults);
 
       final body = jsonEncode({
         'subjectCode': subjectCodeController.text.trim(),
@@ -909,7 +919,7 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
         return;
       }
 
-      final uri = Uri.parse('http://localhost:8080/api/learning-results/upload');
+      final uri = Uri.parse(ApiConfig.learningResultsUpload);
 
       final request = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer ${widget.jwt}'
@@ -960,7 +970,7 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
 
   Future<void> descargarPlantillaCsv() async {
     try {
-      final url = Uri.parse('http://localhost:8080/api/learning-results/template');
+      final url = Uri.parse(ApiConfig.learningResultsTemplate);
 
       final response = await http.get(
         url,

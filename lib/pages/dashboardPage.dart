@@ -15,6 +15,14 @@ import 'package:learnapp/pages/settingsPage.dart';
 import 'package:learnapp/pages/tutoresPage.dart';
 import 'package:learnapp/pages/userAdminPage.dart';
 
+class ApiConfig {
+  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
+  static const String apiPrefix = '/api';
+
+  static String get authMe => '$baseUrl$apiPrefix/auth/me';
+  static String get homeStudents => '$baseUrl$apiPrefix/home/students';
+}
+
 class Maindashboard extends StatefulWidget {
   const Maindashboard({super.key});
 
@@ -79,8 +87,8 @@ class _MainPageState extends State<Maindashboard> {
         return;
       }
 
-      final meUrl = Uri.parse('http://localhost:8080/api/auth/me');
-      final studentsUrl = Uri.parse('http://localhost:8080/api/home/students');
+      final meUrl = Uri.parse(ApiConfig.authMe);
+      final studentsUrl = Uri.parse(ApiConfig.homeStudents);
 
       final meResponse = await http.get(
         meUrl,
@@ -739,7 +747,7 @@ class _MainPageState extends State<Maindashboard> {
             ),
           ),
           IconButton(
-            tooltip: 'Cerrar sesión',
+            tooltip: 'cerrar sesión',
             onPressed: logout,
             icon: const Icon(Icons.logout),
           ),
@@ -777,15 +785,7 @@ class _MainPageState extends State<Maindashboard> {
                           : Colors.black54,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    role,
-                    style: TextStyle(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white70
-                          : Colors.black54,
-                    ),
-                  ),
+
                 ],
               ),
             ),

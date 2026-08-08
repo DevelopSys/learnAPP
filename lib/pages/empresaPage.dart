@@ -9,6 +9,15 @@ import 'package:web/web.dart' as web;
 
 const Color accentColor = Color(0xFF3ECF8E);
 
+class ApiConfig {
+  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
+  static const String apiPrefix = '/api';
+
+  static String get companies => '$baseUrl$apiPrefix/companies';
+  static String get companiesUpload => '$baseUrl$apiPrefix/companies/upload';
+  static String get companiesTemplate => '$baseUrl$apiPrefix/companies/template';
+}
+
 class RepresentanteData {
   final TextEditingController nombreController;
   final TextEditingController dniController;
@@ -158,7 +167,7 @@ class ListadoEmpresasTabState extends State<ListadoEmpresasTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/companies');
+      final url = Uri.parse(ApiConfig.companies);
 
       final response = await http.get(
         url,
@@ -291,9 +300,7 @@ class ListadoEmpresasTabState extends State<ListadoEmpresasTab> {
                         DataCell(Text(empresa.activity)),
                         DataCell(Text(empresa.street)),
                         DataCell(Text(empresa.postalCode)),
-                        // city = provincia visible
                         DataCell(Text(empresa.city)),
-                        // province = localidad visible
                         DataCell(
                           Text(
                             empresa.province.isEmpty
@@ -350,9 +357,7 @@ class _AgregarEmpresaTabState extends State<AgregarEmpresaTab> {
   final actividadController = TextEditingController();
   final calleController = TextEditingController();
   final cpController = TextEditingController();
-  // city = provincia (campo con autocomplete)
   final provinciaController = TextEditingController();
-  // province = localidad (campo simple por defecto)
   final localidadController = TextEditingController();
   final paisController = TextEditingController(text: 'España');
   final telefonoController = TextEditingController();
@@ -362,7 +367,6 @@ class _AgregarEmpresaTabState extends State<AgregarEmpresaTab> {
   bool procesandoCsv = false;
   bool mostrandoSugerenciasProvincia = false;
 
-  // Lista fija de provincias de España [web:64][web:60]
   final List<String> _provincias = const [
     'Álava',
     'Albacete',
@@ -470,7 +474,7 @@ class _AgregarEmpresaTabState extends State<AgregarEmpresaTab> {
 
   Future<void> guardarEmpresa() async {
     if (_formKey.currentState!.validate()) {
-      final url = Uri.parse('http://localhost:8080/api/companies');
+      final url = Uri.parse(ApiConfig.companies);
 
       final body = jsonEncode({
         'nif': nifController.text.trim(),
@@ -478,9 +482,7 @@ class _AgregarEmpresaTabState extends State<AgregarEmpresaTab> {
         'activity': actividadController.text.trim(),
         'street': calleController.text.trim(),
         'postalCode': cpController.text.trim(),
-        // city = provincia visible
         'city': provinciaController.text.trim(),
-        // province = localidad visible
         'province': localidadController.text.trim(),
         'country': paisController.text.trim(),
         'phone': telefonoController.text.trim(),
@@ -599,7 +601,7 @@ class _AgregarEmpresaTabState extends State<AgregarEmpresaTab> {
         return;
       }
 
-      final uri = Uri.parse('http://localhost:8080/api/companies/upload');
+      final uri = Uri.parse(ApiConfig.companiesUpload);
 
       final request = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer ${widget.jwt}'
@@ -646,7 +648,7 @@ class _AgregarEmpresaTabState extends State<AgregarEmpresaTab> {
 
   Future<void> descargarPlantillaEmpresasCsv() async {
     try {
-      final url = Uri.parse('http://localhost:8080/api/companies/template');
+      final url = Uri.parse(ApiConfig.companiesTemplate);
 
       final response = await http.get(
         url,
@@ -899,7 +901,6 @@ class _AgregarEmpresaTabState extends State<AgregarEmpresaTab> {
                               provinciaController.text = p;
                               mostrandoSugerenciasProvincia = false;
 
-                              // Si localidad está vacía, por defecto igual que provincia
                               if (localidadController.text
                                   .trim()
                                   .isEmpty) {
@@ -912,7 +913,6 @@ class _AgregarEmpresaTabState extends State<AgregarEmpresaTab> {
                     ),
                   ),
                 const SizedBox(height: 16),
-
                 const Text('Localidad'),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -924,7 +924,6 @@ class _AgregarEmpresaTabState extends State<AgregarEmpresaTab> {
                   validator: (value) => validarTexto(value, 'la localidad'),
                 ),
                 const SizedBox(height: 16),
-
                 const Text('País'),
                 const SizedBox(height: 8),
                 TextFormField(
