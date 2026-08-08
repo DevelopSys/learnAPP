@@ -5,6 +5,13 @@ import 'package:http/http.dart' as http;
 
 const Color accentColor = Color(0xFF3ECF8E);
 
+class ApiConfig {
+  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
+  static const String apiPrefix = '/api';
+
+  static String get infoCourses => '$baseUrl$apiPrefix/info-courses';
+}
+
 class InfoCourseItem {
   final int? id;
   final String directorName;
@@ -146,7 +153,7 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:8080/api/info-courses'),
+        Uri.parse(ApiConfig.infoCourses),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.jwt}',
@@ -245,7 +252,7 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
 
       if (currentInfo?.id == null) {
         response = await http.post(
-          Uri.parse('http://localhost:8080/api/info-courses'),
+          Uri.parse(ApiConfig.infoCourses),
           headers: {
             'Content-Type': 'application/json; charset=UTF-8',
             'Authorization': 'Bearer ${widget.jwt}',
@@ -254,7 +261,7 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
         );
       } else {
         response = await http.put(
-          Uri.parse('http://localhost:8080/api/info-courses/${currentInfo!.id}'),
+          Uri.parse('${ApiConfig.infoCourses}/${currentInfo!.id}'),
           headers: {
             'Content-Type': 'application/json; charset=UTF-8',
             'Authorization': 'Bearer ${widget.jwt}',
@@ -320,7 +327,7 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('http://localhost:8080/api/info-courses/${currentInfo!.id}'),
+        Uri.parse('${ApiConfig.infoCourses}/${currentInfo!.id}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.jwt}',
@@ -678,15 +685,12 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
                     style: TextStyle(color: mutedTextColor(context)),
                   ),
                   const SizedBox(height: 24),
-
                   buildResumenSuperior(context),
                   const SizedBox(height: 20),
-
                   if (currentInfo == null) ...[
                     buildEmptyState(context),
                     const SizedBox(height: 20),
                   ],
-
                   sectionCard(
                     context: context,
                     title: 'Equipo directivo',
@@ -766,7 +770,7 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
                                   children: [
                                     Expanded(child: nif),
                                     const SizedBox(width: 16),
-                                    const Expanded(child: SizedBox()), // Para que no ocupe todo el ancho
+                                    const Expanded(child: SizedBox()),
                                   ],
                                 ),
                               ],
@@ -787,9 +791,7 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 20),
-
                   sectionCard(
                     context: context,
                     title: 'Datos del centro',
@@ -905,9 +907,7 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
                           );
                         },
                       ),
-
                       const SizedBox(height: 16),
-
                       const Text('Dirección'),
                       const SizedBox(height: 8),
                       TextFormField(
@@ -919,9 +919,7 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
                         validator: (value) =>
                             validarTexto(value, 'la dirección'),
                       ),
-
                       const SizedBox(height: 16),
-
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final isWide = constraints.maxWidth > 700;
@@ -1033,9 +1031,7 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 20),
-
                   sectionCard(
                     context: context,
                     title: 'Curso académico',
@@ -1055,9 +1051,7 @@ class _InfoCoursePageState extends State<InfoCoursePage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 28),
-
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final isWide = constraints.maxWidth > 760;

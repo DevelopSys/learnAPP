@@ -11,6 +11,14 @@ import '../model/course.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
+class ApiConfig {
+  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
+  static const String apiPrefix = '/api';
+
+  static String get students => '$baseUrl$apiPrefix/students';
+  static String get courses => '$baseUrl$apiPrefix/courses';
+}
+
 class StudentItem {
   final int id;
   final String firstName;
@@ -165,7 +173,7 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/students');
+      final url = Uri.parse(ApiConfig.students);
 
       final response = await http.get(
         url,
@@ -214,7 +222,7 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/courses');
+      final url = Uri.parse(ApiConfig.courses);
 
       final response = await http.get(
         url,
@@ -314,7 +322,7 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/students/$id');
+      final url = Uri.parse('${ApiConfig.students}/$id');
 
       final response = await http.delete(
         url,
@@ -370,7 +378,7 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/students');
+      final url = Uri.parse(ApiConfig.students);
 
       final response = await http.delete(
         url,
@@ -558,7 +566,7 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/students/${alumno.id}');
+      final url = Uri.parse('${ApiConfig.students}/${alumno.id}');
 
       final body = jsonEncode({
         'firstName': nombreController.text.trim(),
@@ -616,8 +624,6 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
       });
     }
   }
-
-
 
   Color surfaceColor(BuildContext context) =>
       Theme.of(context).colorScheme.surface;
@@ -827,7 +833,6 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
                                       ? null
                                       : () => borrarAlumno(alumno.id),
                                 ),
-
                               ],
                             ),
                           ),
@@ -892,7 +897,7 @@ class _AgregarAlumnoTabState extends State<AgregarAlumnoTab> {
   }
 
   Future<void> cargarDatos() async {
-    final url = Uri.parse('http://localhost:8080/api/courses');
+    final url = Uri.parse(ApiConfig.courses);
 
     final courseResponse = await http.get(
       url,
@@ -934,7 +939,7 @@ class _AgregarAlumnoTabState extends State<AgregarAlumnoTab> {
 
   Future<void> guardarAlumno() async {
     if (_formKey.currentState!.validate()) {
-      final url = Uri.parse('http://localhost:8080/api/students');
+      final url = Uri.parse(ApiConfig.students);
 
       final body = jsonEncode({
         'firstName': nombreController.text.trim(),
@@ -1033,7 +1038,7 @@ class _AgregarAlumnoTabState extends State<AgregarAlumnoTab> {
         return;
       }
 
-      final uri = Uri.parse('http://localhost:8080/api/students/upload');
+      final uri = Uri.parse('${ApiConfig.students}/upload');
 
       final request = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer ${widget.jwt}'
@@ -1080,7 +1085,7 @@ class _AgregarAlumnoTabState extends State<AgregarAlumnoTab> {
 
   Future<void> descargarPlantillaCsv() async {
     try {
-      final url = Uri.parse('http://localhost:8080/api/students/template');
+      final url = Uri.parse('${ApiConfig.students}/template');
 
       final response = await http.get(
         url,

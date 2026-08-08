@@ -5,7 +5,16 @@ import 'package:intl/intl.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-// FORMATOS DE FECHA Y HORA
+class ApiConfig {
+  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
+  static const String apiPrefix = '/api';
+
+  static String get practices => '$baseUrl$apiPrefix/practices';
+  static String get companies => '$baseUrl$apiPrefix/companies';
+  static String get trainees => '$baseUrl$apiPrefix/trainees';
+  static String get students => '$baseUrl$apiPrefix/students';
+}
+
 final DateFormat backendFormat = DateFormat('yyyy-MM-dd');
 final DateFormat uiFormat = DateFormat('dd/MM/yyyy');
 
@@ -20,7 +29,6 @@ DateTime? parseUiDate(String value) {
   }
 }
 
-// MODELOS
 class PracticeItem {
   final int id;
   final String companyName;
@@ -188,7 +196,6 @@ class SimpleTrainee {
   }
 }
 
-// PÁGINA PRINCIPAL
 class PracticasPage extends StatefulWidget {
   final String jwt;
   const PracticasPage({super.key, required this.jwt});
@@ -236,7 +243,6 @@ class PracticasPageState extends State<PracticasPage> {
   }
 }
 
-// LISTADO
 class ListadoPracticasTab extends StatefulWidget {
   final String jwt;
   const ListadoPracticasTab({super.key, required this.jwt});
@@ -263,7 +269,7 @@ class ListadoPracticasTabState extends State<ListadoPracticasTab> {
     setState(() => cargando = true);
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:8080/api/practices'),
+        Uri.parse(ApiConfig.practices),
         headers: {'Authorization': 'Bearer ${widget.jwt}'},
       );
       if (response.statusCode == 200) {
@@ -281,6 +287,8 @@ class ListadoPracticasTabState extends State<ListadoPracticasTab> {
           practicasFiltradas = List.from(practicas);
           cargando = false;
         });
+      } else {
+        setState(() => cargando = false);
       }
     } catch (e) {
       setState(() => cargando = false);
@@ -315,7 +323,7 @@ class ListadoPracticasTabState extends State<ListadoPracticasTab> {
 
     if (confirmar == true) {
       final res = await http.delete(
-        Uri.parse('http://localhost:8080/api/practices/${p.id}'),
+        Uri.parse('${ApiConfig.practices}/${p.id}'),
         headers: {'Authorization': 'Bearer ${widget.jwt}'},
       );
       if (res.statusCode == 200 || res.statusCode == 204) {
@@ -428,7 +436,6 @@ class ListadoPracticasTabState extends State<ListadoPracticasTab> {
   }
 }
 
-// DIÁLOGO DE EDICIÓN (Simplificado en la plantilla original)
 class PracticeEditDialog extends StatefulWidget {
   final String jwt;
   final PracticeItem practice;
@@ -448,7 +455,6 @@ class PracticeEditDialogState extends State<PracticeEditDialog> {
   }
 }
 
-// CREAR PRÁCTICA
 class CrearPracticaTab extends StatefulWidget {
   final String jwt;
   final VoidCallback? onPracticaCreada;
@@ -486,14 +492,11 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
   final TextEditingController horasTotalesController = TextEditingController();
   final TextEditingController horasDiariasController = TextEditingController();
 
-  // CONTROLADORES DE HORA POR DEFECTO A LAS 09:00 Y 18:00
   final TextEditingController horaInicioController = TextEditingController(text: "09:00");
   final TextEditingController horaFinController = TextEditingController(text: "18:00");
 
   DateTime? fechaInicioSeleccionada;
   DateTime? fechaFinSeleccionada;
-
-  // VARIABLES DE HORA POR DEFECTO A LAS 09:00 Y 18:00
   TimeOfDay? horaInicioSeleccionada = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay? horaFinSeleccionada = const TimeOfDay(hour: 18, minute: 0);
 
@@ -524,16 +527,11 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
   Future<void> cargarDatosIniciales() async {
     setState(() => cargandoDatos = true);
     try {
-      final studentsUrl = Uri.parse('http://localhost:8080/api/students');
-      final companiesUrl = Uri.parse('http://localhost:8080/api/companies');
-      final traineesUrl = Uri.parse('http://localhost:8080/api/trainees');
-      final practicesUrl = Uri.parse('http://localhost:8080/api/practices'); // NUEVO: para filtrar alumnos asignados
-
       final responses = await Future.wait([
-        http.get(studentsUrl, headers: {'Authorization': 'Bearer ${widget.jwt}'}),
-        http.get(companiesUrl, headers: {'Authorization': 'Bearer ${widget.jwt}'}),
-        http.get(traineesUrl, headers: {'Authorization': 'Bearer ${widget.jwt}'}),
-        http.get(practicesUrl, headers: {'Authorization': 'Bearer ${widget.jwt}'}),
+        http.get(Uri.parse(ApiConfig.students), headers: {'Authorization': 'Bearer ${widget.jwt}'}),
+        http.get(Uri.parse(ApiConfig.companies), headers: {'Authorization': 'Bearer ${widget.jwt}'}),
+        http.get(Uri.parse(ApiConfig.trainees), headers: {'Authorization': 'Bearer ${widget.jwt}'}),
+        http.get(Uri.parse(ApiConfig.practices), headers: {'Authorization': 'Bearer ${widget.jwt}'}),
       ]);
 
       final studentsResponse = responses[0];
@@ -551,7 +549,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
         final traineesData = jsonDecode(traineesResponse.body) as List;
         final practicesData = jsonDecode(practicesResponse.body) as List;
 
-        // OBTENEMOS IDs DE ALUMNOS CON PRÁCTICA
         final assignedStudentIds = <int>{};
         for (final p in practicesData) {
           final studentsList = p['students'] as List<dynamic>? ?? [];
@@ -560,7 +557,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
           }
         }
 
-        // MAPEO Y FILTRADO DE ALUMNOS (Ocultamos los asignados)
         final alumnosListaAll = studentsData.map((json) => SimpleStudent.fromJson(json)).toList();
         final alumnosLista = alumnosListaAll.where((a) => !assignedStudentIds.contains(a.id)).toList();
 
@@ -582,15 +578,9 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
         });
       } else {
         setState(() => cargandoDatos = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al cargar alumnos/empresas/tutores'), backgroundColor: Colors.redAccent),
-        );
       }
     } catch (e) {
       setState(() => cargandoDatos = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error de conexión: $e'), backgroundColor: Colors.redAccent),
-      );
     }
   }
 
@@ -618,13 +608,11 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
 
   Future<void> seleccionarFechaInicio() async {
     final now = DateTime.now();
-    final firstDate = DateTime(now.year - 1);
-    final lastDate = DateTime(now.year + 2);
     final seleccionada = await showDatePicker(
       context: context,
       initialDate: fechaInicioSeleccionada ?? now,
-      firstDate: firstDate,
-      lastDate: lastDate,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
       locale: const Locale('es', 'ES'),
     );
     if (seleccionada != null) {
@@ -637,13 +625,11 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
 
   Future<void> seleccionarFechaFin() async {
     final now = DateTime.now();
-    final firstDate = DateTime(now.year - 1);
-    final lastDate = DateTime(now.year + 3);
     final seleccionada = await showDatePicker(
       context: context,
       initialDate: fechaFinSeleccionada ?? fechaInicioSeleccionada ?? now,
-      firstDate: firstDate,
-      lastDate: lastDate,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 3),
       locale: const Locale('es', 'ES'),
     );
     if (seleccionada != null) {
@@ -655,75 +641,47 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
   }
 
   Future<void> seleccionarHoraInicio() async {
-    final TimeOfDay? seleccionada = await showTimePicker(
+    final seleccionada = await showTimePicker(
       context: context,
       initialTime: horaInicioSeleccionada ?? const TimeOfDay(hour: 9, minute: 0),
     );
     if (seleccionada != null) {
       setState(() {
         horaInicioSeleccionada = seleccionada;
-        final hora = seleccionada.hour.toString().padLeft(2, '0');
-        final minuto = seleccionada.minute.toString().padLeft(2, '0');
-        horaInicioController.text = "$hora:$minuto";
+        horaInicioController.text =
+        '${seleccionada.hour.toString().padLeft(2, '0')}:${seleccionada.minute.toString().padLeft(2, '0')}';
       });
     }
   }
 
   Future<void> seleccionarHoraFin() async {
-    final TimeOfDay? seleccionada = await showTimePicker(
+    final seleccionada = await showTimePicker(
       context: context,
       initialTime: horaFinSeleccionada ?? const TimeOfDay(hour: 18, minute: 0),
     );
     if (seleccionada != null) {
       setState(() {
         horaFinSeleccionada = seleccionada;
-        final hora = seleccionada.hour.toString().padLeft(2, '0');
-        final minuto = seleccionada.minute.toString().padLeft(2, '0');
-        horaFinController.text = "$hora:$minuto";
+        horaFinController.text =
+        '${seleccionada.hour.toString().padLeft(2, '0')}:${seleccionada.minute.toString().padLeft(2, '0')}';
       });
     }
   }
 
   Future<void> crearPractica() async {
-    if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Revisa los datos del formulario'), backgroundColor: accentColor),
-      );
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    if (empresaSeleccionada == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona una empresa'), backgroundColor: Colors.redAccent),
-      );
-      return;
-    }
-    if (tutorSeleccionado == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona un tutor'), backgroundColor: Colors.redAccent),
-      );
-      return;
-    }
-    if (alumnosSeleccionados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona al menos un alumno'), backgroundColor: Colors.redAccent),
-      );
+    if (empresaSeleccionada == null || tutorSeleccionado == null || alumnosSeleccionados.isEmpty) {
       return;
     }
 
     final inicio = parseUiDate(fechaInicioController.text.trim());
     final fin = parseUiDate(fechaFinController.text.trim());
 
-    if (inicio == null || fin == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fechas inválidas, usa dd/mm/yyyy'), backgroundColor: Colors.redAccent),
-      );
-      return;
-    }
+    if (inicio == null || fin == null) return;
 
     setState(() => creando = true);
     try {
-      final url = Uri.parse('http://localhost:8080/api/practices');
       final totalHours = int.parse(horasTotalesController.text.trim());
       final dailyHours = int.parse(horasDiariasController.text.trim());
 
@@ -742,7 +700,7 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
       });
 
       final response = await http.post(
-        url,
+        Uri.parse(ApiConfig.practices),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
           'Authorization': 'Bearer ${widget.jwt}',
@@ -763,7 +721,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
         horasTotalesController.clear();
         horasDiariasController.clear();
 
-        // RESTAURAR VALORES POR DEFECTO
         horaInicioController.text = "09:00";
         horaFinController.text = "18:00";
         horaInicioSeleccionada = const TimeOfDay(hour: 9, minute: 0);
@@ -777,15 +734,8 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
         mostrandoSugerenciasEmpresa = false;
 
         setState(() {});
-
-        // Recargar datos iniciales para que el alumno recién asignado desaparezca de la lista
         cargarDatosIniciales();
-
         widget.onPracticaCreada?.call();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${response.statusCode} - ${response.body}'), backgroundColor: Colors.redAccent),
-        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -832,10 +782,7 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Crear práctica de alumno',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
-                ),
+                const Text('Crear práctica de alumno', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
                 Text(
                   'Selecciona uno o varios alumnos, una empresa y un tutor, e indica los datos de la práctica.',
@@ -843,7 +790,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                 ),
                 const SizedBox(height: 24),
 
-                // Filtro alumnos
                 Row(
                   children: [
                     const Text('Alumnos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
@@ -915,7 +861,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                 ),
                 const SizedBox(height: 24),
 
-                // Empresa
                 const Text('Empresa'),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -968,7 +913,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                   ),
                 const SizedBox(height: 16),
 
-                // Tutor
                 const Text('Tutor de empresa'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<SimpleTrainee>(
@@ -992,7 +936,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                 ),
                 const SizedBox(height: 24),
 
-                // Datos de práctica
                 const Text(
                   'Datos de la práctica',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
@@ -1010,7 +953,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                 ),
                 const SizedBox(height: 16),
 
-                // Horas Totales y Diarias
                 Row(
                   children: [
                     Expanded(
@@ -1054,7 +996,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                 ),
                 const SizedBox(height: 16),
 
-                // Fechas Inicio y Fin
                 Row(
                   children: [
                     Expanded(
@@ -1100,7 +1041,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                 ),
                 const SizedBox(height: 16),
 
-                // Horas Inicio y Fin
                 Row(
                   children: [
                     Expanded(
@@ -1146,7 +1086,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                 ),
                 const SizedBox(height: 16),
 
-                // Horario Descriptivo
                 const Text('Horario (Descripción)'),
                 const SizedBox(height: 8),
                 TextFormField(

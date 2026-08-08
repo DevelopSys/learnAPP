@@ -4,6 +4,14 @@ import 'package:http/http.dart' as http;
 
 const Color accentColor = Color(0xFF3ECF8E);
 
+class ApiConfig {
+  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
+  static const String apiPrefix = '/api';
+
+  static String get trainees => '$baseUrl$apiPrefix/trainees';
+  static String get companies => '$baseUrl$apiPrefix/companies';
+}
+
 class CompanyItem {
   final int id;
   final String legalName;
@@ -168,7 +176,7 @@ class ListadoTutoresTabState extends State<ListadoTutoresTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/trainees');
+      final url = Uri.parse(ApiConfig.trainees);
 
       final response = await http.get(
         url,
@@ -217,7 +225,7 @@ class ListadoTutoresTabState extends State<ListadoTutoresTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/companies');
+      final url = Uri.parse(ApiConfig.companies);
 
       final response = await http.get(
         url,
@@ -311,7 +319,7 @@ class ListadoTutoresTabState extends State<ListadoTutoresTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/trainees/$id');
+      final url = Uri.parse('${ApiConfig.trainees}/$id');
 
       final response = await http.delete(
         url,
@@ -357,7 +365,6 @@ class ListadoTutoresTabState extends State<ListadoTutoresTab> {
     final dniController = TextEditingController(text: tutor.dni);
     final emailController = TextEditingController(text: tutor.email);
 
-    // Autocomplete para empresa en edición
     final empresaSearchController =
     TextEditingController(text: tutor.companyName);
     bool mostrandoSugerenciasEmpresa = false;
@@ -458,8 +465,6 @@ class ListadoTutoresTabState extends State<ListadoTutoresTab> {
                           },
                         ),
                         const SizedBox(height: 12),
-
-                        // Empresa asociada (autocomplete)
                         const Align(
                           alignment: Alignment.centerLeft,
                           child: Text('Empresa'),
@@ -564,7 +569,7 @@ class ListadoTutoresTabState extends State<ListadoTutoresTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/trainees/${tutor.id}');
+      final url = Uri.parse('${ApiConfig.trainees}/${tutor.id}');
 
       final body = jsonEncode({
         'firstName': nombreController.text.trim(),
@@ -816,7 +821,7 @@ class _AgregarTutorTabState extends State<AgregarTutorTab> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/companies');
+      final url = Uri.parse(ApiConfig.companies);
 
       final response = await http.get(
         url,
@@ -861,7 +866,7 @@ class _AgregarTutorTabState extends State<AgregarTutorTab> {
 
   Future<void> guardarTutor() async {
     if (_formKey.currentState!.validate()) {
-      final url = Uri.parse('http://localhost:8080/api/trainees');
+      final url = Uri.parse(ApiConfig.trainees);
 
       final body = jsonEncode({
         'firstName': nombreController.text.trim(),

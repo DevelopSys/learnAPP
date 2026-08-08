@@ -8,6 +8,15 @@ import 'package:web/web.dart' as web;
 
 const Color accentColor = Color(0xFF3ECF8E);
 
+class ApiConfig {
+  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
+  static const String apiPrefix = '/api';
+
+  static String get companies => '$baseUrl$apiPrefix/companies';
+  static String get practices => '$baseUrl$apiPrefix/practices';
+  static String get agreements => '$baseUrl$apiPrefix/agreements';
+}
+
 class AnexoCompanyItem {
   final int id;
   final String legalName;
@@ -102,7 +111,8 @@ class PracticeItem {
     final agreement = company?['agreement'] as Map<String, dynamic>?;
 
     final studentsJson =
-        (json['students'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        (json['students'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ??
+            [];
 
     final students =
     studentsJson.map((s) => PracticeStudentItem.fromJson(s)).toList();
@@ -207,7 +217,7 @@ class _AnexosConveniosTabState extends State<_AnexosConveniosTab> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:8080/api/companies'),
+        Uri.parse(ApiConfig.companies),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.jwt}',
@@ -356,7 +366,7 @@ class _AnexosConveniosTabState extends State<_AnexosConveniosTab> {
     try {
       await _descargarArchivoBytes(
         url: Uri.parse(
-          'http://localhost:8080/api/agreements/${empresa.agreementId}/anexo',
+          '${ApiConfig.agreements}/${empresa.agreementId}/anexo',
         ),
         fallbackFileName:
         'convenio_${empresa.agreementNumber.isEmpty ? empresa.legalName : empresa.agreementNumber}.docx',
@@ -447,7 +457,8 @@ class _AnexosConveniosTabState extends State<_AnexosConveniosTab> {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
+                              valueColor:
+                              AlwaysStoppedAnimation<Color>(
                                   Colors.black),
                             ),
                           )
@@ -502,7 +513,7 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:8080/api/practices'),
+        Uri.parse(ApiConfig.practices),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.jwt}',
@@ -511,7 +522,8 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final lista = data.map((json) => PracticeItem.fromJson(json)).toList();
+        final lista =
+        data.map((json) => PracticeItem.fromJson(json)).toList();
 
         final setCiclos = <String>{};
         for (final p in lista) {
@@ -694,7 +706,7 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
     try {
       await _descargarArchivoBytes(
         url: Uri.parse(
-          'http://localhost:8080/api/agreements/${p.agreementId}/anexo',
+          '${ApiConfig.agreements}/${p.agreementId}/anexo',
         ),
         fallbackFileName:
         'convenio_${p.agreementNumber.isEmpty ? p.companyName : p.agreementNumber}.docx',
@@ -725,7 +737,7 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
     try {
       await _descargarArchivoBytes(
         url: Uri.parse(
-          'http://localhost:8080/api/practices/${p.id}/$endpointSuffix',
+          '${ApiConfig.practices}/${p.id}/$endpointSuffix',
         ),
         fallbackFileName: 'practica_${p.id}_anexo_$tipo.docx',
         fallbackContentType:
@@ -758,15 +770,15 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
 
       if (tipo == '6') {
         url = Uri.parse(
-          'http://localhost:8080/api/practices/${p.id}/anexo6?studentId=${student.id}',
+          '${ApiConfig.practices}/${p.id}/anexo6?studentId=${student.id}',
         );
       } else if (tipo == '8') {
         url = Uri.parse(
-          'http://localhost:8080/api/practices/${p.id}/anexo8?studentId=${student.id}',
+          '${ApiConfig.practices}/${p.id}/anexo8?studentId=${student.id}',
         );
       } else if (tipo == '9') {
         url = Uri.parse(
-          'http://localhost:8080/api/practices/${p.id}/anexo9?studentId=${student.id}',
+          '${ApiConfig.practices}/${p.id}/anexo9?studentId=${student.id}',
         );
       } else {
         throw Exception('Tipo de anexo no soportado: $tipo');
@@ -1021,7 +1033,6 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
                         alignment: WrapAlignment.end,
                         children: [
                           _buildBotonAnexo1(p: p),
-
                           _buildBotonPractica(
                             p: p,
                             tipo: '4',
@@ -1029,7 +1040,6 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
                             endpointSuffix: 'anexo4',
                             color: Colors.blue.shade100,
                           ),
-
                           if (unSoloAlumno && alumnoUnico != null)
                             _buildBotonAlumno(
                               p: p,
@@ -1038,7 +1048,6 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
                               label: 'Anexo 6',
                               color: Colors.purple.shade100,
                             ),
-
                           if (unSoloAlumno && alumnoUnico != null)
                             _buildBotonAlumno(
                               p: p,
@@ -1047,7 +1056,6 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
                               label: 'Anexo 8',
                               color: Colors.teal.shade100,
                             ),
-
                           if (unSoloAlumno && alumnoUnico != null)
                             _buildBotonAlumno(
                               p: p,

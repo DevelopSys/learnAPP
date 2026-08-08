@@ -4,6 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+class ApiConfig {
+  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
+  static const String apiPrefix = '/api';
+
+  static String get adminUsers => '$baseUrl$apiPrefix/admin/users';
+  static String get courses => '$baseUrl$apiPrefix/courses';
+}
+
 class UsersAdminPage extends StatefulWidget {
   final String jwt;
 
@@ -37,8 +45,8 @@ class _UsersAdminPageState extends State<UsersAdminPage> {
     try {
       final jwt = widget.jwt;
 
-      final usersUrl = Uri.parse('http://localhost:8080/api/admin/users');
-      final coursesUrl = Uri.parse('http://localhost:8080/api/courses');
+      final usersUrl = Uri.parse(ApiConfig.adminUsers);
+      final coursesUrl = Uri.parse(ApiConfig.courses);
 
       final usersResponse = await http.get(
         usersUrl,
@@ -60,7 +68,6 @@ class _UsersAdminPageState extends State<UsersAdminPage> {
         await secureStorage.delete(key: 'jwt');
         if (!mounted) return;
 
-        // Aquí podrías navegar al login si quieres
         setState(() {
           loading = false;
           errorMessage = 'Sesión caducada. Vuelve a iniciar sesión.';
@@ -128,7 +135,7 @@ class _UsersAdminPageState extends State<UsersAdminPage> {
 
     try {
       final url =
-      Uri.parse('http://localhost:8080/api/admin/users/${user.id}');
+      Uri.parse('${ApiConfig.adminUsers}/${user.id}');
       final response = await http.delete(
         url,
         headers: {
@@ -211,7 +218,7 @@ class _UsersAdminPageState extends State<UsersAdminPage> {
 
     try {
       final url = Uri.parse(
-        'http://localhost:8080/api/admin/users/${user.id}/reset-password',
+        '${ApiConfig.adminUsers}/${user.id}/reset-password',
       );
       final response = await http.put(
         url,
@@ -490,7 +497,7 @@ class _UsersAdminPageState extends State<UsersAdminPage> {
     try {
       if (isEditing) {
         final url = Uri.parse(
-          'http://localhost:8080/api/admin/users/${user!.id}',
+          '${ApiConfig.adminUsers}/${user!.id}',
         );
         final response = await http.put(
           url,
@@ -518,7 +525,7 @@ class _UsersAdminPageState extends State<UsersAdminPage> {
         }
       } else {
         final url = Uri.parse(
-          'http://localhost:8080/api/admin/users',
+          ApiConfig.adminUsers,
         );
         final response = await http.post(
           url,

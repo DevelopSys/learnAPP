@@ -8,6 +8,13 @@ import 'package:learnapp/main.dart';
 import 'package:learnapp/pages/dashboardPage.dart';
 import 'package:learnapp/pages/registroPage.dart';
 
+class ApiConfig {
+  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
+  static const String apiPrefix = '/api';
+
+  static String get authLogin => '$baseUrl$apiPrefix/auth/login';
+  static String get authGoogleLink => '$baseUrl$apiPrefix/auth/google/link';
+}
 
 class LoginPageST extends StatefulWidget {
   const LoginPageST({super.key});
@@ -27,20 +34,42 @@ class LoginState extends State<LoginPageST> {
 
   bool isLoading = false;
   bool isGoogleLoading = false;
+  bool showPassword = false;
   String? errorMessage;
 
-  Color surfaceColor(BuildContext context) =>
-      Theme.of(context).colorScheme.surface;
+  Color backgroundColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  Color borderColor(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF2A2F3A)
-          : const Color(0xFFD7DEE8);
+    return isDark
+        ? const Color(0xFF0C111D)
+        : const Color(0xFFF5F7FB);
+  }
 
-  Color mutedTextColor(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
-          ? Colors.white.withOpacity(0.7)
-          : Colors.black.withOpacity(0.65);
+  Color cardColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return isDark
+        ? const Color(0xFF151C2B)
+        : Colors.white;
+  }
+
+  Color borderColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF2A2F3A)
+        : const Color(0xFFD7DEE8);
+  }
+
+  Color mutedTextColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withOpacity(0.7)
+        : Colors.black.withOpacity(0.65);
+  }
+
+  Color primaryColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF8B9CFF)
+        : const Color(0xFF536DFE);
+  }
 
   @override
   void dispose() {
@@ -66,7 +95,7 @@ class LoginState extends State<LoginPageST> {
     });
 
     try {
-      final url = Uri.parse('http://localhost:8080/api/auth/login');
+      final url = Uri.parse(ApiConfig.authLogin);
 
       final response = await http.post(
         url,
@@ -90,13 +119,18 @@ class LoginState extends State<LoginPageST> {
           return;
         }
 
-        await secureStorage.write(key: 'jwt', value: token.toString());
+        await secureStorage.write(
+          key: 'jwt',
+          value: token.toString(),
+        );
 
         if (!mounted) return;
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const Maindashboard()),
+          MaterialPageRoute(
+            builder: (context) => const Maindashboard(),
+          ),
         );
       } else if (response.statusCode == 401) {
         setState(() {
@@ -104,7 +138,8 @@ class LoginState extends State<LoginPageST> {
         });
       } else {
         setState(() {
-          errorMessage = 'Error al iniciar sesión (${response.statusCode})';
+          errorMessage =
+          'Error al iniciar sesión (${response.statusCode})';
         });
       }
     } catch (e) {
@@ -113,6 +148,7 @@ class LoginState extends State<LoginPageST> {
       });
     } finally {
       if (!mounted) return;
+
       setState(() {
         isLoading = false;
       });
@@ -137,7 +173,9 @@ class LoginState extends State<LoginPageST> {
       }
 
       await _googleSignIn.signOut();
-      final GoogleSignInAccount? account = await _googleSignIn.signIn();
+
+      final GoogleSignInAccount? account =
+      await _googleSignIn.signIn();
 
       if (account == null) {
         setState(() {
@@ -147,7 +185,7 @@ class LoginState extends State<LoginPageST> {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:8080/api/auth/google/link'),
+        Uri.parse(ApiConfig.authGoogleLink),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $jwt',
@@ -160,15 +198,19 @@ class LoginState extends State<LoginPageST> {
 
       if (response.statusCode == 200) {
         if (!mounted) return;
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Cuenta Google vinculada correctamente'),
+            content: Text(
+              'Cuenta Google vinculada correctamente',
+            ),
             backgroundColor: Colors.green,
           ),
         );
       } else if (response.statusCode == 401) {
         setState(() {
-          errorMessage = 'Tu sesión ha caducado. Vuelve a iniciar sesión';
+          errorMessage =
+          'Tu sesión ha caducado. Vuelve a iniciar sesión';
         });
       } else if (response.statusCode == 409) {
         setState(() {
@@ -185,228 +227,482 @@ class LoginState extends State<LoginPageST> {
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'No se pudo completar la vinculación con Google';
+        errorMessage =
+        'No se pudo completar la vinculación con Google';
       });
     } finally {
       if (!mounted) return;
+
       setState(() {
         isGoogleLoading = false;
       });
     }
   }
 
+  InputDecoration fieldDecoration(
+      BuildContext context, {
+        required String hintText,
+        required IconData icon,
+        Widget? suffixIcon,
+      }) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(
+        color: mutedTextColor(context),
+      ),
+      prefixIcon: Icon(
+        icon,
+        color: mutedTextColor(context),
+        size: 21,
+      ),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: isDark
+          ? const Color(0xFF101725)
+          : const Color(0xFFF8FAFC),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 17,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: borderColor(context),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: primaryColor(context),
+          width: 1.5,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
+    final primary = primaryColor(context);
+
+    final textColor = isDark
+        ? Colors.white
+        : const Color(0xFF172033);
 
     return Scaffold(
-      appBar: AppBar(
-        actions: [
-          IconButton(
-            onPressed: () {
-              MyApp.of(context).toggleTheme();
-            },
-            icon: Icon(
-              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+      backgroundColor: backgroundColor(context),
+      body: Stack(
+        children: [
+          Positioned(
+            top: -100,
+            right: -80,
+            child: _decorativeCircle(
+              240,
+              primary.withOpacity(.12),
             ),
           ),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth >= 900;
+          Positioned(
+            bottom: -130,
+            left: -100,
+            child: _decorativeCircle(
+              280,
+              Colors.deepPurple.withOpacity(.08),
+            ),
+          ),
 
-          return Row(
-            children: [
-              if (isDesktop)
-                Expanded(
-                  child: Column(
-                    children: [
-                      const Padding(padding: EdgeInsets.all(24)),
-                      const Expanded(
-                        child: Center(
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Sistema gestor de documentos',
-                              style: TextStyle(
-                                fontSize: 42,
-                                fontWeight: FontWeight.w700,
-                                height: 1.2,
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: 8,
+                  right: 16,
+                ),
+                child: IconButton(
+                  tooltip: isDark
+                      ? 'Cambiar a tema claro'
+                      : 'Cambiar a tema oscuro',
+                  onPressed: () {
+                    MyApp.of(context).toggleTheme();
+                  },
+                  icon: Icon(
+                    isDark
+                        ? Icons.light_mode_outlined
+                        : Icons.dark_mode_outlined,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  24,
+                  56,
+                  24,
+                  32,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 470,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(
+                      28,
+                      30,
+                      28,
+                      24,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cardColor(context),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: borderColor(context),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(
+                            isDark ? .22 : .07,
+                          ),
+                          blurRadius: 35,
+                          offset: const Offset(0, 18),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: primary.withOpacity(.13),
+                              borderRadius:
+                              BorderRadius.circular(20),
+                            ),
+                            child: Icon(
+                              Icons.folder_special_rounded,
+                              size: 32,
+                              color: primary,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        Center(
+                          child: Text(
+                            'Bienvenido de nuevo',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -.5,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Center(
+                          child: Text(
+                            'Accede a tu cuenta para continuar',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: mutedTextColor(context),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        Text(
+                          'Email',
+                          style: TextStyle(
+                            color: textColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+
+                        const SizedBox(height: 9),
+
+                        TextField(
+                          controller: emailController,
+                          keyboardType:
+                          TextInputType.emailAddress,
+                          decoration: fieldDecoration(
+                            context,
+                            hintText: 'Introduce tu email',
+                            icon: Icons.mail_outline_rounded,
+                          ),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        Text(
+                          'Password',
+                          style: TextStyle(
+                            color: textColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+
+                        const SizedBox(height: 9),
+
+                        TextField(
+                          controller: passController,
+                          obscureText: !showPassword,
+                          decoration: fieldDecoration(
+                            context,
+                            hintText:
+                            'Introduce tu contraseña',
+                            icon: Icons.lock_outline_rounded,
+                            suffixIcon: IconButton(
+                              tooltip: showPassword
+                                  ? 'Ocultar contraseña'
+                                  : 'Mostrar contraseña',
+                              onPressed: () {
+                                setState(() {
+                                  showPassword =
+                                  !showPassword;
+                                });
+                              },
+                              icon: Icon(
+                                showPassword
+                                    ? Icons
+                                    .visibility_off_outlined
+                                    : Icons
+                                    .visibility_outlined,
+                                color:
+                                mutedTextColor(context),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Image.asset('assets/images/logo.jpeg'),
-                      ),
-                    ],
-                  ),
-                ),
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: Container(
-                        padding: const EdgeInsets.all(28),
-                        decoration: BoxDecoration(
-                          color: surfaceColor(context),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: borderColor(context)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Sign in',
-                              style: TextStyle(
-                                fontSize: 30,
-                                fontWeight: FontWeight.bold,
+
+                        const SizedBox(height: 16),
+
+                        if (errorMessage != null)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent
+                                  .withOpacity(.1),
+                              borderRadius:
+                              BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.redAccent
+                                    .withOpacity(.25),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Accede a tu cuenta para continuar',
-                              style: TextStyle(
-                                color: mutedTextColor(context),
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            const Text('Email'),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
-                                hintText: 'Introduce tu mail',
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text('Password'),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: passController,
-                              obscureText: true,
-                              decoration: const InputDecoration(
-                                hintText: 'Introduce tu pass',
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            if (errorMessage != null)
-                              Text(
-                                errorMessage!,
-                                style: const TextStyle(
-                                  color: Colors.redAccent,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: accentColor,
-                                  foregroundColor: Colors.black,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                onPressed: isLoading ? null : login,
-                                child: isLoading
-                                    ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.4,
-                                    color: Colors.black,
-                                  ),
-                                )
-                                    : const Text(
-                                  'Sign in',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
+                            child: Row(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Divider(color: borderColor(context)),
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 19,
+                                  color: Colors.redAccent,
                                 ),
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 12),
-                                  child: Text('o'),
-                                ),
+                                const SizedBox(width: 8),
                                 Expanded(
-                                  child: Divider(color: borderColor(context)),
+                                  child: Text(
+                                    errorMessage!,
+                                    style: const TextStyle(
+                                      color: Colors.redAccent,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  side: BorderSide(color: borderColor(context)),
-                                ),
-                                onPressed: isGoogleLoading ? null : vincularGoogle,
-                                icon: isGoogleLoading
-                                    ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                                    : const Icon(Icons.account_circle_outlined),
-                                label: Text(
-                                  isGoogleLoading
-                                      ? 'Vinculando cuenta Google...'
-                                      : 'Vincular cuenta Google',
-                                ),
+                          ),
+
+                        const SizedBox(height: 22),
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                BorderRadius.circular(14),
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Primero entra con tu usuario y contraseña. Después puedes vincular la cuenta Google que usarás para servicios externos.',
+                            onPressed:
+                            isLoading ? null : login,
+                            child: isLoading
+                                ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child:
+                              CircularProgressIndicator(
+                                strokeWidth: 2.4,
+                                color: Colors.white,
+                              ),
+                            )
+                                : const Text(
+                              'Sign in',
                               style: TextStyle(
-                                color: mutedTextColor(context),
-                                fontSize: 12,
+                                fontSize: 15,
+                                fontWeight:
+                                FontWeight.w700,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Center(
-                              child: TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => const RegisterPage()),
-                                  );
-                                },
-                                child: const Text('Crear cuenta'),
+                          ),
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: borderColor(context),
+                              ),
+                            ),
+                            Padding(
+                              padding:
+                              const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
+                              child: Text(
+                                'o continúa con',
+                                style: TextStyle(
+                                  color:
+                                  mutedTextColor(context),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                color: borderColor(context),
                               ),
                             ),
                           ],
                         ),
-                      ),
+
+                        const SizedBox(height: 20),
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: textColor,
+                              side: BorderSide(
+                                color: borderColor(context),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                BorderRadius.circular(14),
+                              ),
+                            ),
+                            onPressed: isGoogleLoading
+                                ? null
+                                : vincularGoogle,
+                            icon: isGoogleLoading
+                                ? const SizedBox(
+                              width: 19,
+                              height: 19,
+                              child:
+                              CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                                : const Text(
+                              'G',
+                              style: TextStyle(
+                                color:
+                                Color(0xFF4285F4),
+                                fontSize: 20,
+                                fontWeight:
+                                FontWeight.w800,
+                              ),
+                            ),
+                            label: Text(
+                              isGoogleLoading
+                                  ? 'Vinculando cuenta Google...'
+                                  : 'Vincular cuenta Google',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        Text(
+                          'Primero entra con tu usuario y contraseña. Después puedes vincular la cuenta Google que usarás para servicios externos.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: mutedTextColor(context),
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        Center(
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                  const RegisterPage(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Crear cuenta',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _decorativeCircle(
+      double size,
+      Color color,
+      ) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
       ),
     );
   }
