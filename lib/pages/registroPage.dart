@@ -4,17 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:learnapp/main.dart';
+import '../config/api_config.dart';
 
 import '../model/course.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-class ApiConfig {
-  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
-  static const String apiPrefix = '/api';
 
-  static String get fullBaseUrl => '$baseUrl$apiPrefix';
-}
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -117,7 +113,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.fullBaseUrl}/public/courses'),
+        Uri.parse(ApiConfig.publicCourses),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -299,7 +295,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('${ApiConfig.fullBaseUrl}/auth/register'),
+        Uri.parse(ApiConfig.authRegister),
         headers: {
           'Content-Type': 'application/json',
         },

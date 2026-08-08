@@ -1,27 +1,42 @@
-import 'dart:convert';
+import  'dart:convert';
 import 'dart:ui';
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:learnapp/main.dart';
-import 'package:learnapp/pages/AnexosPage.dart';
-import 'package:learnapp/pages/alumnosPage.dart';
-import 'package:learnapp/pages/empresaPage.dart';
+
+import 'package:learnapp/pages/AnexosPage.dart'
+    hide ApiConfig;
+
+import 'package:learnapp/pages/alumnosPage.dart'
+    hide ApiConfig;
+
+import 'package:learnapp/pages/empresaPage.dart'
+    hide ApiConfig;
+
 import 'package:learnapp/pages/loginPage.dart';
-import 'package:learnapp/pages/practicasPage.dart';
-import 'package:learnapp/pages/resultadosPage.dart';
-import 'package:learnapp/pages/settingsPage.dart';
-import 'package:learnapp/pages/tutoresPage.dart';
-import 'package:learnapp/pages/userAdminPage.dart';
 
-class ApiConfig {
-  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
-  static const String apiPrefix = '/api';
+import 'package:learnapp/pages/practicasPage.dart'
+    hide ApiConfig;
 
-  static String get authMe => '$baseUrl$apiPrefix/auth/me';
-  static String get homeStudents => '$baseUrl$apiPrefix/home/students';
-}
+import 'package:learnapp/pages/resultadosPage.dart'
+    hide ApiConfig;
+
+import 'package:learnapp/pages/settingsPage.dart'
+    hide ApiConfig;
+
+import 'package:learnapp/pages/tutoresPage.dart'
+    hide ApiConfig;
+
+import 'package:learnapp/pages/userAdminPage.dart'
+    hide ApiConfig;
+
+import '../config/api_config.dart';
+
+
+
 
 class Maindashboard extends StatefulWidget {
   const Maindashboard({super.key});

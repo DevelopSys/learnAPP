@@ -5,16 +5,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:learnapp/main.dart';
-import 'package:learnapp/pages/dashboardPage.dart';
-import 'package:learnapp/pages/registroPage.dart';
+import 'package:learnapp/pages/dashboardPage.dart'
+as dashboard_page;
 
-class ApiConfig {
-  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
-  static const String apiPrefix = '/api';
+import 'package:learnapp/pages/registroPage.dart'
+as registro_page;
 
-  static String get authLogin => '$baseUrl$apiPrefix/auth/login';
-  static String get authGoogleLink => '$baseUrl$apiPrefix/auth/google/link';
-}
+import '../config/api_config.dart';
+
 
 class LoginPageST extends StatefulWidget {
   const LoginPageST({super.key});
@@ -24,9 +22,14 @@ class LoginPageST extends StatefulWidget {
 }
 
 class LoginState extends State<LoginPageST> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passController = TextEditingController();
-  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  final TextEditingController emailController =
+  TextEditingController();
+
+  final TextEditingController passController =
+  TextEditingController();
+
+  final FlutterSecureStorage secureStorage =
+  const FlutterSecureStorage();
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
@@ -35,23 +38,27 @@ class LoginState extends State<LoginPageST> {
   bool isLoading = false;
   bool isGoogleLoading = false;
   bool showPassword = false;
+
   String? errorMessage;
 
-  Color backgroundColor(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  bool get isDark =>
+      Theme.of(context).brightness == Brightness.dark;
 
-    return isDark
-        ? const Color(0xFF0C111D)
-        : const Color(0xFFF5F7FB);
-  }
+  Color get primaryColor => isDark
+      ? const Color(0xFF8B9CFF)
+      : const Color(0xFF536DFE);
 
-  Color cardColor(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Color get backgroundColor => isDark
+      ? const Color(0xFF0C111D)
+      : const Color(0xFFF5F7FB);
 
-    return isDark
-        ? const Color(0xFF151C2B)
-        : Colors.white;
-  }
+  Color get cardColor => isDark
+      ? const Color(0xFF151C2B)
+      : Colors.white;
+
+  Color get textColor => isDark
+      ? Colors.white
+      : const Color(0xFF172033);
 
   Color borderColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
@@ -63,12 +70,6 @@ class LoginState extends State<LoginPageST> {
     return Theme.of(context).brightness == Brightness.dark
         ? Colors.white.withOpacity(0.7)
         : Colors.black.withOpacity(0.65);
-  }
-
-  Color primaryColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF8B9CFF)
-        : const Color(0xFF536DFE);
   }
 
   @override
@@ -114,7 +115,8 @@ class LoginState extends State<LoginPageST> {
 
         if (token == null || token.toString().isEmpty) {
           setState(() {
-            errorMessage = 'La respuesta no contiene un token válido';
+            errorMessage =
+            'La respuesta no contiene un token válido';
           });
           return;
         }
@@ -129,7 +131,7 @@ class LoginState extends State<LoginPageST> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const Maindashboard(),
+            builder: (context) => const dashboard_page.Maindashboard(),
           ),
         );
       } else if (response.statusCode == 401) {
@@ -179,7 +181,8 @@ class LoginState extends State<LoginPageST> {
 
       if (account == null) {
         setState(() {
-          errorMessage = 'Se canceló el acceso con Google';
+          errorMessage =
+          'Se canceló el acceso con Google';
         });
         return;
       }
@@ -276,7 +279,7 @@ class LoginState extends State<LoginPageST> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(
-          color: primaryColor(context),
+          color: primaryColor,
           width: 1.5,
         ),
       ),
@@ -285,17 +288,8 @@ class LoginState extends State<LoginPageST> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
-
-    final primary = primaryColor(context);
-
-    final textColor = isDark
-        ? Colors.white
-        : const Color(0xFF172033);
-
     return Scaffold(
-      backgroundColor: backgroundColor(context),
+      backgroundColor: backgroundColor,
       body: Stack(
         children: [
           Positioned(
@@ -303,7 +297,7 @@ class LoginState extends State<LoginPageST> {
             right: -80,
             child: _decorativeCircle(
               240,
-              primary.withOpacity(.12),
+              primaryColor.withOpacity(.12),
             ),
           ),
           Positioned(
@@ -314,7 +308,6 @@ class LoginState extends State<LoginPageST> {
               Colors.deepPurple.withOpacity(.08),
             ),
           ),
-
           SafeArea(
             child: Align(
               alignment: Alignment.topRight,
@@ -340,7 +333,6 @@ class LoginState extends State<LoginPageST> {
               ),
             ),
           ),
-
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -362,7 +354,7 @@ class LoginState extends State<LoginPageST> {
                       24,
                     ),
                     decoration: BoxDecoration(
-                      color: cardColor(context),
+                      color: cardColor,
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
                         color: borderColor(context),
@@ -386,20 +378,18 @@ class LoginState extends State<LoginPageST> {
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              color: primary.withOpacity(.13),
+                              color: primaryColor.withOpacity(.13),
                               borderRadius:
                               BorderRadius.circular(20),
                             ),
                             child: Icon(
                               Icons.folder_special_rounded,
                               size: 32,
-                              color: primary,
+                              color: primaryColor,
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 22),
-
                         Center(
                           child: Text(
                             'Bienvenido de nuevo',
@@ -411,9 +401,7 @@ class LoginState extends State<LoginPageST> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 8),
-
                         Center(
                           child: Text(
                             'Accede a tu cuenta para continuar',
@@ -424,9 +412,7 @@ class LoginState extends State<LoginPageST> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 30),
-
                         Text(
                           'Email',
                           style: TextStyle(
@@ -434,9 +420,7 @@ class LoginState extends State<LoginPageST> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-
                         const SizedBox(height: 9),
-
                         TextField(
                           controller: emailController,
                           keyboardType:
@@ -447,9 +431,7 @@ class LoginState extends State<LoginPageST> {
                             icon: Icons.mail_outline_rounded,
                           ),
                         ),
-
                         const SizedBox(height: 18),
-
                         Text(
                           'Password',
                           style: TextStyle(
@@ -457,9 +439,7 @@ class LoginState extends State<LoginPageST> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-
                         const SizedBox(height: 9),
-
                         TextField(
                           controller: passController,
                           obscureText: !showPassword,
@@ -490,9 +470,7 @@ class LoginState extends State<LoginPageST> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
                         if (errorMessage != null)
                           Container(
                             width: double.infinity,
@@ -529,15 +507,13 @@ class LoginState extends State<LoginPageST> {
                               ],
                             ),
                           ),
-
                         const SizedBox(height: 22),
-
                         SizedBox(
                           width: double.infinity,
                           height: 54,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: primary,
+                              backgroundColor: primaryColor,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
@@ -567,9 +543,7 @@ class LoginState extends State<LoginPageST> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 22),
-
                         Row(
                           children: [
                             Expanded(
@@ -598,9 +572,7 @@ class LoginState extends State<LoginPageST> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 20),
-
                         SizedBox(
                           width: double.infinity,
                           height: 52,
@@ -647,9 +619,7 @@ class LoginState extends State<LoginPageST> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 14),
-
                         Text(
                           'Primero entra con tu usuario y contraseña. Después puedes vincular la cuenta Google que usarás para servicios externos.',
                           textAlign: TextAlign.center,
@@ -659,9 +629,7 @@ class LoginState extends State<LoginPageST> {
                             height: 1.4,
                           ),
                         ),
-
                         const SizedBox(height: 18),
-
                         Center(
                           child: TextButton(
                             onPressed: () {
@@ -669,7 +637,7 @@ class LoginState extends State<LoginPageST> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) =>
-                                  const RegisterPage(),
+                                  const registro_page.RegisterPage(),
                                 ),
                               );
                             },
