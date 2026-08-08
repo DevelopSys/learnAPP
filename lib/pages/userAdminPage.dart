@@ -3,14 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
-class ApiConfig {
-  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
-  static const String apiPrefix = '/api';
-
-  static String get adminUsers => '$baseUrl$apiPrefix/admin/users';
-  static String get courses => '$baseUrl$apiPrefix/courses';
-}
 
 class UsersAdminPage extends StatefulWidget {
   final String jwt;

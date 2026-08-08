@@ -6,17 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import 'package:web/web.dart' as web;
+import '../config/api_config.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-class ApiConfig {
-  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
-  static const String apiPrefix = '/api';
 
-  static String get companies => '$baseUrl$apiPrefix/companies';
-  static String get companiesUpload => '$baseUrl$apiPrefix/companies/upload';
-  static String get companiesTemplate => '$baseUrl$apiPrefix/companies/template';
-}
 
 class RepresentanteData {
   final TextEditingController nombreController;

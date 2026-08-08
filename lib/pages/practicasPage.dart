@@ -2,18 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import '../config/api_config.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-class ApiConfig {
-  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
-  static const String apiPrefix = '/api';
 
-  static String get practices => '$baseUrl$apiPrefix/practices';
-  static String get companies => '$baseUrl$apiPrefix/companies';
-  static String get trainees => '$baseUrl$apiPrefix/trainees';
-  static String get students => '$baseUrl$apiPrefix/students';
-}
 
 final DateFormat backendFormat = DateFormat('yyyy-MM-dd');
 final DateFormat uiFormat = DateFormat('dd/MM/yyyy');

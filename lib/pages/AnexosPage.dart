@@ -5,17 +5,11 @@ import 'dart:js_interop';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
+import '../config/api_config.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-class ApiConfig {
-  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
-  static const String apiPrefix = '/api';
 
-  static String get companies => '$baseUrl$apiPrefix/companies';
-  static String get practices => '$baseUrl$apiPrefix/practices';
-  static String get agreements => '$baseUrl$apiPrefix/agreements';
-}
 
 class AnexoCompanyItem {
   final int id;

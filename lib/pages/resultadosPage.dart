@@ -6,20 +6,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
+import '../config/api_config.dart';
 
 import '../model/course.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
-
-class ApiConfig {
-  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
-  static const String apiPrefix = '/api';
-
-  static String get learningResults => '$baseUrl$apiPrefix/learning-results';
-  static String get courses => '$baseUrl$apiPrefix/courses';
-  static String get learningResultsUpload => '$baseUrl$apiPrefix/learning-results/upload';
-  static String get learningResultsTemplate => '$baseUrl$apiPrefix/learning-results/template';
-}
 
 class LearningResultItem {
   final int id;

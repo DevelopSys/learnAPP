@@ -1,16 +1,10 @@
 import 'dart:convert';
-
+import '../config/api_config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-class ApiConfig {
-  static const String baseUrl = 'https://learnback-c8vp.onrender.com';
-  static const String apiPrefix = '/api';
-
-  static String get infoCourses => '$baseUrl$apiPrefix/info-courses';
-}
 
 class InfoCourseItem {
   final int? id;
