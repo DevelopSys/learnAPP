@@ -522,7 +522,7 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
     try {
       final responses = await Future.wait([
         http.get(Uri.parse(ApiConfig.students), headers: {'Authorization': 'Bearer ${widget.jwt}'}),
-        http.get(Uri.parse(ApiConfig.companies), headers: {'Authorization': 'Bearer ${widget.jwt}'}),
+        http.get(Uri.parse(ApiConfig.companiesAll), headers: {'Authorization': 'Bearer ${widget.jwt}'}),
         http.get(Uri.parse(ApiConfig.trainees), headers: {'Authorization': 'Bearer ${widget.jwt}'}),
         http.get(Uri.parse(ApiConfig.practices), headers: {'Authorization': 'Bearer ${widget.jwt}'}),
       ]);

@@ -1,4 +1,4 @@
-import  'dart:convert';
+import 'dart:convert';
 import 'dart:ui';
 
 
@@ -115,6 +115,8 @@ class _MainPageState extends State<Maindashboard> {
 
       print('STATUS /me: ${meResponse.statusCode}');
       print('BODY /me: ${meResponse.body}');
+      print('=== TOKEN RECIBIDA: $token');  // AÑ¾ADE ESTO
+
 
       if (!mounted) return;
 
@@ -207,7 +209,7 @@ class _MainPageState extends State<Maindashboard> {
         loading = false;
       });
     } catch (e) {
-      print('EXCEPCIÓN cargarDatosUsuario: $e');
+      print('EXCEPCIÓ¢N cargarDatosUsuario: $e');
       if (!mounted) return;
       setState(() {
         loading = false;
@@ -252,7 +254,7 @@ class _MainPageState extends State<Maindashboard> {
           pageBuilder: (_) => TutoresPage(jwt: jwt),
         ),
         _DrawerItem(
-          title: 'Prácticas',
+          title: 'Prá¡¢cticas',
           icon: Icons.work_history,
           pageBuilder: (_) => PracticasPage(jwt: jwt),
         ),
@@ -272,12 +274,17 @@ class _MainPageState extends State<Maindashboard> {
           pageBuilder: (_) => AlumnosPage(jwt: jwt),
         ),
         _DrawerItem(
+          title: 'Empresas',
+          icon: Icons.business,
+          pageBuilder: (_) => EmpresasPage(jwt: jwt),
+        ),
+        _DrawerItem(
           title: 'Resultados',
           icon: Icons.assessment,
           pageBuilder: (_) => ResultadosAprendizajePage(jwt: jwt),
         ),
         _DrawerItem(
-          title: 'Prácticas',
+          title: 'Prá¡¢cticas',
           icon: Icons.work_history,
           pageBuilder: (_) => PracticasPage(jwt: jwt),
         ),
@@ -439,50 +446,120 @@ class _MainPageState extends State<Maindashboard> {
               child: Text('No hay alumnos que coincidan con los filtros'),
             )
           else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowHeight: 52,
-                dataRowMinHeight: 56,
-                dataRowMaxHeight: 64,
-                columns: const [
-                  DataColumn(label: Text('Alumno')),
-                  DataColumn(label: Text('Curso')),
-                  DataColumn(label: Text('Prácticas')),
-                  DataColumn(label: Text('Empresa')),
-                ],
-                rows: filteredStudents.map((student) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(student.fullName)),
-                      DataCell(Text(student.courseName)),
-                      DataCell(
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: student.hasPractice
-                                ? Colors.green.withOpacity(0.15)
-                                : Colors.orange.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            student.hasPractice ? 'Sí' : 'Pendiente',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: student.hasPractice
-                                  ? Colors.green.shade700
-                                  : Colors.orange.shade800,
-                            ),
+            SizedBox(
+              height: 400,
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: filteredStudents.length,
+                itemBuilder: (context, index) {
+                  final student = filteredStudents[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFF3ECF8E).withOpacity(0.15),
+                        child: Text(
+                          _getInitials(student.fullName),
+                          style: const TextStyle(
+                            color: Color(0xFF3ECF8E),
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      DataCell(Text(student.companyName ?? '-')),
-                    ],
+                      title: Text(
+                        student.fullName.isEmpty ? '-' : student.fullName,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  student.courseName.isEmpty
+                                      ? '-'
+                                      : student.courseName,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  student.companyName?.isNotEmpty == true
+                                      ? student.companyName!
+                                      : 'Sin empresa',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: student.hasPractice
+                                      ? Colors.green.withOpacity(0.15)
+                                      : Colors.orange.withOpacity(0.18),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  student.hasPractice ? 'Asignadas' : 'Pendiente',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: student.hasPractice
+                                        ? Colors.green.shade700
+                                        : Colors.orange.shade800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      isThreeLine: true,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Ver detalles',
+                            icon: const Icon(Icons.visibility, size: 20),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Detalles de ${student.fullName}'),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                   );
-                }).toList(),
+                },
               ),
             ),
         ],
@@ -680,6 +757,20 @@ class _MainPageState extends State<Maindashboard> {
     );
   }
 
+  String _getInitials(String fullName) {
+    final parts = fullName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+
+    return '${parts.first.substring(0, 1)}${parts[1].substring(0, 1)}'
+        .toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -726,7 +817,7 @@ class _MainPageState extends State<Maindashboard> {
       appBar: AppBar(
         title: Text(currentTitle),
         actions: [
-          if (isAdmin)
+          if (canManageCenterInfo)
             IconButton(
               tooltip: 'Administrar usuarios',
               onPressed: () {
@@ -740,8 +831,8 @@ class _MainPageState extends State<Maindashboard> {
             ),
           IconButton(
             tooltip: canManageCenterInfo
-                ? 'Configuración general'
-                : 'Solo administración puede acceder a esta opción',
+                ? 'Configuracií³¢n general'
+                : 'Solo administracií³¢n puede acceder a esta opcií³¢n',
             onPressed: canManageCenterInfo
                 ? () {
               Navigator.of(context).push(
@@ -762,7 +853,7 @@ class _MainPageState extends State<Maindashboard> {
             ),
           ),
           IconButton(
-            tooltip: 'cerrar sesión',
+            tooltip: 'cerrar sesií³¢n',
             onPressed: logout,
             icon: const Icon(Icons.logout),
           ),
