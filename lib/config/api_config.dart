@@ -1,6 +1,8 @@
 class ApiConfig {
   static const String baseUrl =
-      'https://learnback-c8vp.onrender.com';
+      'http://localhost:8080';
+
+  /*'https://learnback-c8vp.onrender.com';*/
 
   static const String apiPrefix = '/api';
 
@@ -31,6 +33,7 @@ class ApiConfig {
   static String get publicCourses =>
       '$fullBaseUrl/public/courses';
 
+
   // Alumnos
   static String get students =>
       '$fullBaseUrl/students';
@@ -42,8 +45,12 @@ class ApiConfig {
       '$fullBaseUrl/students/template';
 
   // Empresas
+
   static String get companies =>
       '$fullBaseUrl/companies';
+
+  static String get companiesAll =>
+      '$fullBaseUrl/companies/all';
 
   static String get companiesUpload =>
       '$fullBaseUrl/companies/upload';
@@ -80,4 +87,6 @@ class ApiConfig {
   // Administración de usuarios
   static String get adminUsers =>
       '$fullBaseUrl/admin/users';
+
+
 }
