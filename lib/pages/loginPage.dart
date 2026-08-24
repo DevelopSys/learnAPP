@@ -630,25 +630,7 @@ class LoginState extends State<LoginPageST> {
                           ),
                         ),
                         const SizedBox(height: 18),
-                        Center(
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                  const registro_page.RegisterPage(),
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              'Crear cuenta',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
+
                       ],
                     ),
                   ),
