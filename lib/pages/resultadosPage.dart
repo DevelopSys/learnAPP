@@ -34,14 +34,41 @@ class LearningResultItem {
   factory LearningResultItem.fromJson(Map<String, dynamic> json) {
     final courseJson = json['course'] as Map<String, dynamic>?;
 
+    String? courseNameWithLevel;
+    if (courseJson != null) {
+      final level = courseJson['level'];
+      final name = courseJson['name']?.toString() ?? '';
+
+      if (level != null && level
+          .toString()
+          .trim()
+          .isNotEmpty) {
+        courseNameWithLevel = '$level $name'.trim();
+      } else {
+        courseNameWithLevel = name;
+      }
+    }
+
     return LearningResultItem(
-      id: json['id'],
-      subjectCode: json['subjectCode'] ?? '',
-      subjectName: json['subjectName'] ?? '',
-      number: json['number'] ?? 0,
-      description: json['description'] ?? '',
-      courseName: courseJson?['name'] ?? '',
-      courseId: courseJson?['id'],
+      id: json['id'] is int
+          ? json['id'] as int
+          : json['id'] is num
+          ? (json['id'] as num).toInt()
+          : int.tryParse(json['id'].toString()) ?? 0,
+      subjectCode: json['subjectCode']?.toString() ?? '',
+      subjectName: json['subjectName']?.toString() ?? '',
+      number: json['number'] is int
+          ? json['number'] as int
+          : json['number'] is num
+          ? (json['number'] as num).toInt()
+          : int.tryParse(json['number'].toString()) ?? 0,
+      description: json['description']?.toString() ?? '',
+      courseName: courseNameWithLevel,
+      courseId: courseJson?['id'] is int
+          ? courseJson!['id'] as int
+          : courseJson?['id'] is num
+          ? (courseJson!['id'] as num).toInt()
+          : int.tryParse(courseJson?['id']?.toString() ?? ''),
     );
   }
 }
@@ -56,8 +83,7 @@ class ResultadosAprendizajePage extends StatefulWidget {
       _ResultadosAprendizajePageState();
 }
 
-class _ResultadosAprendizajePageState
-    extends State<ResultadosAprendizajePage> {
+class _ResultadosAprendizajePageState extends State<ResultadosAprendizajePage> {
   final GlobalKey<ListadoResultadosTabState> listadoKey =
   GlobalKey<ListadoResultadosTabState>();
 
@@ -72,7 +98,10 @@ class _ResultadosAprendizajePageState
       child: Column(
         children: [
           Container(
-            color: Theme.of(context).colorScheme.surface,
+            color: Theme
+                .of(context)
+                .colorScheme
+                .surface,
             child: const TabBar(
               labelColor: accentColor,
               unselectedLabelColor: Colors.grey,
@@ -121,6 +150,7 @@ class ListadoResultadosTab extends StatefulWidget {
 class ListadoResultadosTabState extends State<ListadoResultadosTab> {
   List<LearningResultItem> resultados = [];
   List<Course> cursos = [];
+  Map<int, String> cursoNombres = {};
 
   int? cursoFiltroId;
   final TextEditingController buscarController = TextEditingController();
@@ -181,7 +211,8 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Error al cargar resultados de aprendizaje: ${response.statusCode}',
+              'Error al cargar resultados de aprendizaje: ${response
+                  .statusCode}',
             ),
             backgroundColor: Colors.redAccent,
           ),
@@ -224,6 +255,22 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
 
         setState(() {
           cursos = data.map((json) => Course.fromJson(json)).toList();
+
+          cursoNombres = {};
+          for (final json in data) {
+            final course = Course.fromJson(json);
+            final level = json['level'];
+            final name = json['name']?.toString() ?? '';
+
+            if (level != null && level
+                .toString()
+                .trim()
+                .isNotEmpty) {
+              cursoNombres[course.id] = '$level $name'.trim();
+            } else {
+              cursoNombres[course.id] = name;
+            }
+          }
           cargandoCursos = false;
         });
       } else {
@@ -275,24 +322,25 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
   }) async {
     final resultado = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(titulo),
-        content: Text(mensaje),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+      builder: (context) =>
+          AlertDialog(
+            title: Text(titulo),
+            content: Text(mensaje),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Aceptar'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Aceptar'),
-          ),
-        ],
-      ),
     );
 
     return resultado ?? false;
@@ -386,7 +434,9 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
                             labelText: 'Código de módulo',
                           ),
                           validator: (value) =>
-                          value == null || value.trim().isEmpty
+                          value == null || value
+                              .trim()
+                              .isEmpty
                               ? 'Introduce el código'
                               : null,
                         ),
@@ -397,7 +447,9 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
                             labelText: 'Nombre de módulo',
                           ),
                           validator: (value) =>
-                          value == null || value.trim().isEmpty
+                          value == null || value
+                              .trim()
+                              .isEmpty
                               ? 'Introduce el nombre del módulo'
                               : null,
                         ),
@@ -409,7 +461,9 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
                             labelText: 'Número RA',
                           ),
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
+                            if (value == null || value
+                                .trim()
+                                .isEmpty) {
                               return 'Introduce el número';
                             }
                             final numero = int.tryParse(value.trim());
@@ -428,7 +482,7 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
                           items: cursos.map((curso) {
                             return DropdownMenuItem<int>(
                               value: curso.id,
-                              child: Text(curso.name),
+                              child: Text(cursoNombres[curso.id] ?? curso.name),
                             );
                           }).toList(),
                           onChanged: (value) {
@@ -449,7 +503,9 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
                             alignLabelWithHint: true,
                           ),
                           validator: (value) =>
-                          value == null || value.trim().isEmpty
+                          value == null || value
+                              .trim()
+                              .isEmpty
                               ? 'Introduce la descripción'
                               : null,
                         ),
@@ -547,17 +603,31 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
   }
 
   Color surfaceColor(BuildContext context) =>
-      Theme.of(context).colorScheme.surface;
+      Theme
+          .of(context)
+          .colorScheme
+          .surface;
 
   Color borderThemeColor(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
+      Theme
+          .of(context)
+          .brightness == Brightness.dark
           ? const Color(0xFF263041)
           : const Color(0xFFD7DEE8);
 
   Color mutedTextColor(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
+      Theme
+          .of(context)
+          .brightness == Brightness.dark
           ? Colors.white.withOpacity(0.68)
           : Colors.black.withOpacity(0.60);
+
+  Color innerCardColor(BuildContext context) =>
+      Theme
+          .of(context)
+          .brightness == Brightness.dark
+          ? const Color(0xFF111720)
+          : const Color(0xFFF8FAFC);
 
   @override
   Widget build(BuildContext context) {
@@ -613,7 +683,7 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
                           ...cursos.map((curso) {
                             return DropdownMenuItem<int?>(
                               value: curso.id,
-                              child: Text(curso.name),
+                              child: Text(cursoNombres[curso.id] ?? curso.name),
                             );
                           }),
                         ],
@@ -685,65 +755,138 @@ class ListadoResultadosTabState extends State<ListadoResultadosTab> {
                   style: TextStyle(color: mutedTextColor(context)),
                 )
               else
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Código módulo')),
-                      DataColumn(label: Text('Nombre módulo')),
-                      DataColumn(label: Text('Nº RA')),
-                      DataColumn(label: Text('Descripción')),
-                      DataColumn(label: Text('Curso')),
-                      DataColumn(label: Text('Acciones')),
-                    ],
-                    rows: resultadosFiltrados.map((item) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(item.subjectCode)),
-                          DataCell(Text(item.subjectName)),
-                          DataCell(Text(item.number.toString())),
-                          DataCell(
-                            SizedBox(
-                              width: 380,
-                              child: Text(
-                                item.description,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          DataCell(Text(item.courseName ?? 'Sin curso')),
-                          DataCell(
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: resultadosFiltrados.length,
+                  itemBuilder: (context, index) {
+                    final item = resultadosFiltrados[index];
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 0,
+                      color: surfaceColor(context),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: borderThemeColor(context),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Row(
-                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                IconButton(
-                                  tooltip: 'Editar resultado',
-                                  icon: const Icon(
-                                    Icons.edit_outlined,
-                                    color: Colors.blueAccent,
+                                CircleAvatar(
+                                  radius: 25,
+                                  backgroundColor:
+                                  accentColor.withOpacity(0.15),
+                                  child: const Icon(
+                                    Icons.menu_book_outlined,
+                                    color: accentColor,
                                   ),
-                                  onPressed: procesando
-                                      ? null
-                                      : () => editarResultado(item),
                                 ),
-                                IconButton(
-                                  tooltip: 'Eliminar resultado',
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: Colors.redAccent,
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.subjectName.isEmpty
+                                            ? 'Sin nombre'
+                                            : item.subjectName,
+                                        style: const TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'Código: ${item.subjectCode.isEmpty
+                                            ? '-'
+                                            : item.subjectCode} | RA ${item
+                                            .number}',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: mutedTextColor(context),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.courseName ?? 'Sin curso',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: mutedTextColor(context),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  onPressed: procesando
-                                      ? null
-                                      : () => borrarResultado(item.id),
+                                ),
+                                const SizedBox(width: 8),
+                                PopupMenuButton<String>(
+                                  tooltip: 'Acciones',
+                                  onSelected: (value) {
+                                    if (value == 'editar') {
+                                      editarResultado(item);
+                                    } else if (value == 'eliminar') {
+                                      borrarResultado(item.id);
+                                    }
+                                  },
+                                  itemBuilder: (context) =>
+                                  const [
+                                    PopupMenuItem<String>(
+                                      value: 'editar',
+                                      child: ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        leading: Icon(Icons.edit_outlined),
+                                        title: Text('Editar'),
+                                      ),
+                                    ),
+                                    PopupMenuItem<String>(
+                                      value: 'eliminar',
+                                      child: ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        leading: Icon(
+                                          Icons.delete_outline,
+                                          color: Colors.redAccent,
+                                        ),
+                                        title: Text('Eliminar'),
+                                      ),
+                                    ),
+                                  ],
+                                  icon: const Icon(Icons.more_vert),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: innerCardColor(context),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: borderThemeColor(context),
+                                ),
+                              ),
+                              child: Text(
+                                item.description.isEmpty
+                                    ? 'Sin descripción'
+                                    : item.description,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: mutedTextColor(context),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
             ],
           ),
@@ -777,6 +920,7 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
 
   Course? cursoSeleccionado;
   List<Course> cursos = [];
+  Map<int, String> cursoNombres = {};
 
   bool procesandoCsv = false;
 
@@ -811,6 +955,22 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
 
       setState(() {
         cursos = data.map((json) => Course.fromJson(json)).toList();
+
+        cursoNombres = {};
+        for (final json in data) {
+          final course = Course.fromJson(json);
+          final level = json['level'];
+          final name = json['name']?.toString() ?? '';
+
+          if (level != null && level
+              .toString()
+              .trim()
+              .isNotEmpty) {
+            cursoNombres[course.id] = '$level $name'.trim();
+          } else {
+            cursoNombres[course.id] = name;
+          }
+        }
       });
     } else {
       debugPrint('Error cargando cursos: ${response.body}');
@@ -857,22 +1017,25 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
 
         widget.onGuardado?.call();
       } else {
+        content: Text('Error: ${response.body}');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${response.body}'),
             backgroundColor: Colors.redAccent,
           ),
+
         );
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Comprueba los datos del formulario'),
-          backgroundColor: accentColor,
-        ),
-      );
-    }
-  }
+            } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+            content: Text('Comprueba los datos del formulario'),
+            backgroundColor: accentColor,
+            ),
+            );
+            }
+        }
 
   Future<void> subirCsvResultados() async {
     try {
@@ -1011,15 +1174,22 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
   }
 
   Color surfaceColor(BuildContext context) =>
-      Theme.of(context).colorScheme.surface;
+      Theme
+          .of(context)
+          .colorScheme
+          .surface;
 
   Color borderThemeColor(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
+      Theme
+          .of(context)
+          .brightness == Brightness.dark
           ? const Color(0xFF263041)
           : const Color(0xFFD7DEE8);
 
   Color mutedTextColor(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
+      Theme
+          .of(context)
+          .brightness == Brightness.dark
           ? Colors.white.withOpacity(0.68)
           : Colors.black.withOpacity(0.60);
 
@@ -1069,7 +1239,10 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           foregroundColor:
-                          Theme.of(context).colorScheme.onSurface,
+                          Theme
+                              .of(context)
+                              .colorScheme
+                              .onSurface,
                           side: BorderSide(color: borderThemeColor(context)),
                         ),
                         onPressed: descargarPlantillaCsv,
@@ -1084,7 +1257,10 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<Course>(
                   value: cursoSeleccionado,
-                  dropdownColor: Theme.of(context).colorScheme.surface,
+                  dropdownColor: Theme
+                      .of(context)
+                      .colorScheme
+                      .surface,
                   decoration: const InputDecoration(
                     hintText: 'Selecciona un curso',
                     prefixIcon: Icon(Icons.school_outlined),
@@ -1092,7 +1268,7 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
                   items: cursos.map((curso) {
                     return DropdownMenuItem<Course>(
                       value: curso,
-                      child: Text(curso.name),
+                      child: Text(cursoNombres[curso.id] ?? curso.name),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -1117,7 +1293,9 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
                     prefixIcon: Icon(Icons.qr_code_outlined),
                   ),
                   validator: (value) =>
-                  value == null || value.trim().isEmpty
+                  value == null || value
+                      .trim()
+                      .isEmpty
                       ? 'Introduce el código de módulo'
                       : null,
                 ),
@@ -1131,7 +1309,9 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
                     prefixIcon: Icon(Icons.menu_book_outlined),
                   ),
                   validator: (value) =>
-                  value == null || value.trim().isEmpty
+                  value == null || value
+                      .trim()
+                      .isEmpty
                       ? 'Introduce el nombre del módulo'
                       : null,
                 ),
@@ -1146,7 +1326,9 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
                     prefixIcon: Icon(Icons.format_list_numbered_outlined),
                   ),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
+                    if (value == null || value
+                        .trim()
+                        .isEmpty) {
                       return 'Introduce el número';
                     }
                     final numero = int.tryParse(value.trim());
@@ -1170,7 +1352,9 @@ class _AgregarResultadoTabState extends State<AgregarResultadoTab> {
                     alignLabelWithHint: true,
                   ),
                   validator: (value) =>
-                  value == null || value.trim().isEmpty
+                  value == null || value
+                      .trim()
+                      .isEmpty
                       ? 'Introduce la descripción'
                       : null,
                 ),

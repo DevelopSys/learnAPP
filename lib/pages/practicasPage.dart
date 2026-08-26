@@ -6,8 +6,6 @@ import '../config/api_config.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-
-
 final DateFormat backendFormat = DateFormat('yyyy-MM-dd');
 final DateFormat uiFormat = DateFormat('dd/MM/yyyy');
 
@@ -60,23 +58,71 @@ class PracticeItem {
   });
 
   factory PracticeItem.fromJson(Map<String, dynamic> json) {
-    final companyJson = json['company'] as Map<String, dynamic>?;
-    final traineeJson = json['trainee'] as Map<String, dynamic>?;
-    final studentsJson = (json['students'] as List<dynamic>?) ?? [];
+    final companyData = json['company'];
+    final traineeData = json['trainee'];
+    final studentsData = json['students'];
+
+    Map<String, dynamic>? companyJson;
+    if (companyData is Map<String, dynamic>) {
+      companyJson = companyData;
+    }
+
+    Map<String, dynamic>? traineeJson;
+    if (traineeData is Map<String, dynamic>) {
+      traineeJson = traineeData;
+    }
+
+    final List<dynamic> studentsJson = studentsData is List ? studentsData : [];
 
     final studentNames = <String>[];
     final studentCourseNames = <String>[];
     final studentIds = <int>[];
 
     for (final s in studentsJson) {
-      final m = s as Map<String, dynamic>;
-      final name = '${m['firstName']} ${m['lastName']}';
-      studentNames.add(name);
-      studentIds.add((m['id'] as num).toInt());
+      if (s is! Map) {
+        continue;
+      }
 
-      final course = m['course'] as Map<String, dynamic>?;
-      if (course != null && course['name'] != null) {
-        studentCourseNames.add(course['name'] as String);
+      final m = Map<String, dynamic>.from(s);
+
+      final firstName = m['firstName']?.toString() ?? '';
+      final lastName = m['lastName']?.toString() ?? '';
+      final name = '$firstName $lastName'.trim();
+
+      studentNames.add(name);
+
+      final rawId = m['id'];
+      final studentId = rawId is int
+          ? rawId
+          : int.tryParse(rawId?.toString() ?? '') ?? 0;
+
+      studentIds.add(studentId);
+
+      final courseData = m['course'];
+
+      Map<String, dynamic>? courseJson;
+      if (courseData is Map<String, dynamic>) {
+        courseJson = courseData;
+      }
+
+      final courseName = courseJson?['name']?.toString() ?? '';
+      final rawLevel = courseJson?['level'];
+
+      int? courseLevel;
+      if (rawLevel is int) {
+        courseLevel = rawLevel;
+      } else if (rawLevel != null) {
+        courseLevel = int.tryParse(rawLevel.toString());
+      }
+
+      String courseDisplayName = courseName;
+
+      if (courseName.isNotEmpty && courseLevel != null) {
+        courseDisplayName = '${courseLevel}º $courseName';
+      }
+
+      if (courseDisplayName.isNotEmpty) {
+        studentCourseNames.add(courseDisplayName);
       }
     }
 
@@ -96,7 +142,7 @@ class PracticeItem {
     } catch (_) {}
 
     return PracticeItem(
-      id: json['id'],
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
       companyName: companyJson?['legalName'] ?? "",
       agreementNumber: json['agreementNumber'] ?? "",
       agreementDate: agreementDateUi,
@@ -109,8 +155,8 @@ class PracticeItem {
       schedule: json['schedule'] ?? "",
       startTime: json['startTime']?.toString(),
       endTime: json['endTime']?.toString(),
-      totalHours: json['totalHours'] as int?,
-      dailyHours: json['dailyHours'] as int?,
+      totalHours: json['totalHours'] is int ? json['totalHours'] : int.tryParse(json['totalHours']?.toString() ?? ''),
+      dailyHours: json['dailyHours'] is int ? json['dailyHours'] : int.tryParse(json['dailyHours']?.toString() ?? ''),
       studentIds: studentIds,
     );
   }
@@ -120,16 +166,58 @@ class SimpleStudent {
   final int id;
   final String fullName;
   final String courseName;
+  final int? courseLevel;
 
-  SimpleStudent({required this.id, required this.fullName, required this.courseName});
+  SimpleStudent({
+    required this.id,
+    required this.fullName,
+    required this.courseName,
+    required this.courseLevel,
+  });
 
   factory SimpleStudent.fromJson(Map<String, dynamic> json) {
-    final course = json['course'] as Map<String, dynamic>?;
+    final courseData = json['course'];
+
+    Map<String, dynamic>? courseJson;
+    if (courseData is Map<String, dynamic>) {
+      courseJson = courseData;
+    }
+
+    final rawId = json['id'];
+
+    final int idValue = rawId is int
+        ? rawId
+        : int.tryParse(rawId?.toString() ?? '') ?? 0;
+
+    final rawLevel = courseJson?['level'];
+
+    int? levelValue;
+    if (rawLevel is int) {
+      levelValue = rawLevel;
+    } else if (rawLevel != null) {
+      levelValue = int.tryParse(rawLevel.toString());
+    }
+
     return SimpleStudent(
-      id: json['id'],
-      fullName: '${json['firstName']} ${json['lastName']}',
-      courseName: course?['name']?.toString() ?? "",
+      id: idValue,
+      fullName:
+      '${json['firstName']?.toString() ?? ''} ${json['lastName']?.toString() ?? ''}'
+          .trim(),
+      courseName: courseJson?['name']?.toString() ?? '',
+      courseLevel: levelValue,
     );
+  }
+
+  String get courseDisplayName {
+    if (courseName.trim().isEmpty) {
+      return 'Sin curso';
+    }
+
+    if (courseLevel == null) {
+      return courseName;
+    }
+
+    return '${courseLevel}º $courseName';
   }
 }
 
@@ -154,7 +242,7 @@ class SimpleCompany {
 
   factory SimpleCompany.fromJson(Map<String, dynamic> json) {
     return SimpleCompany(
-      id: json['id'],
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
       legalName: json['legalName'] ?? "",
       street: json['street'] ?? "",
       postalCode: json['postalCode'] ?? "",
@@ -180,11 +268,22 @@ class SimpleTrainee {
   SimpleTrainee({required this.id, required this.fullName, required this.companyId});
 
   factory SimpleTrainee.fromJson(Map<String, dynamic> json) {
-    final company = json['company'] as Map<String, dynamic>?;
+    final companyData = json['company'];
+
+    Map<String, dynamic>? companyJson;
+    if (companyData is Map<String, dynamic>) {
+      companyJson = companyData;
+    }
+
+    final rawId = json['id'];
+    final rawCompanyId = companyJson?['id'];
+
     return SimpleTrainee(
-      id: json['id'],
-      fullName: '${json['firstName']} ${json['lastName']}',
-      companyId: (company?['id'] as num?)?.toInt() ?? 0,
+      id: rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '') ?? 0,
+      fullName: '${json['firstName']?.toString() ?? ''} ${json['lastName']?.toString() ?? ''}'.trim(),
+      companyId: rawCompanyId is int
+          ? rawCompanyId
+          : int.tryParse(rawCompanyId?.toString() ?? '') ?? 0,
     );
   }
 }
@@ -339,6 +438,41 @@ class ListadoPracticasTabState extends State<ListadoPracticasTab> {
     if (actualizado == true) cargarPracticas();
   }
 
+  Widget _practiceInfoLine(
+      BuildContext context,
+      IconData icon,
+      String text,
+      ) {
+    final mutedColor = Theme.of(context)
+        .textTheme
+        .bodyMedium
+        ?.color
+        ?.withOpacity(0.68);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 17,
+          color: mutedColor,
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              color: mutedColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (cargando) return const Center(child: CircularProgressIndicator());
@@ -378,48 +512,223 @@ class ListadoPracticasTabState extends State<ListadoPracticasTab> {
                 ],
               ),
               const SizedBox(height: 24),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: const [
-                    DataColumn(label: Text('Empresa')),
-                    DataColumn(label: Text('Convenio')),
-                    DataColumn(label: Text('Alumnos')),
-                    DataColumn(label: Text('Curso')),
-                    DataColumn(label: Text('Inicio')),
-                    DataColumn(label: Text('Fin')),
-                    DataColumn(label: Text('Acciones')),
-                  ],
-                  rows: practicasFiltradas.map((p) {
-                    return DataRow(cells: [
-                      DataCell(Text(p.companyName)),
-                      DataCell(Text(p.agreementNumber)),
-                      DataCell(Text(p.studentNames.join(', '))),
-                      DataCell(Text(p.studentCourseNames.isNotEmpty ? p.studentCourseNames.first : '-')),
-                      DataCell(Text(p.startDate)),
-                      DataCell(Text(p.endDate)),
-                      DataCell(
-                        Row(
-                          children: [
-                            IconButton(
-                              tooltip: 'Editar',
-                              icon: const Icon(Icons.edit),
-                              iconSize: 20,
-                              onPressed: () => editarPractica(p),
-                            ),
-                            IconButton(
-                              tooltip: 'Eliminar',
-                              icon: const Icon(Icons.delete_outline),
-                              iconSize: 20,
-                              color: Colors.redAccent,
-                              onPressed: () => confirmarEliminarPractica(p),
-                            ),
-                          ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 700;
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: practicasFiltradas.length,
+                    itemBuilder: (context, index) {
+                      final practica = practicasFiltradas[index];
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 0,
+                        color: Theme.of(context).colorScheme.surface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? const Color(0xFF263041)
+                                : const Color(0xFFD7DEE8),
+                          ),
                         ),
-                      ),
-                    ]);
-                  }).toList(),
-                ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 25,
+                                    backgroundColor: accentColor.withOpacity(0.15),
+                                    child: const Icon(
+                                      Icons.work_outline,
+                                      color: accentColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          practica.companyName.isEmpty
+                                              ? 'Sin empresa'
+                                              : practica.companyName,
+                                          style: const TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          practica.agreementNumber.isEmpty
+                                              ? 'Sin número de convenio'
+                                              : 'Convenio: ${practica.agreementNumber}',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.color
+                                                ?.withOpacity(0.7),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuButton<String>(
+                                    tooltip: 'Acciones',
+                                    onSelected: (value) {
+                                      if (value == 'editar') {
+                                        editarPractica(practica);
+                                      } else if (value == 'eliminar') {
+                                        confirmarEliminarPractica(practica);
+                                      }
+                                    },
+                                    itemBuilder: (context) => const [
+                                      PopupMenuItem<String>(
+                                        value: 'editar',
+                                        child: ListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          leading: Icon(Icons.edit_outlined),
+                                          title: Text('Editar'),
+                                        ),
+                                      ),
+                                      PopupMenuItem<String>(
+                                        value: 'eliminar',
+                                        child: ListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          leading: Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.redAccent,
+                                          ),
+                                          title: Text('Eliminar'),
+                                        ),
+                                      ),
+                                    ],
+                                    icon: const Icon(Icons.more_vert),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 9,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      practica.studentCourseNames.isEmpty
+                                          ? 'Sin curso'
+                                          : practica.studentCourseNames.join(', '),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 9,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withOpacity(0.14),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '${practica.studentNames.length} alumno'
+                                          '${practica.studentNames.length == 1 ? '' : 's'}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.green.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              if (isMobile)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _practiceInfoLine(
+                                      context,
+                                      Icons.people_outline,
+                                      practica.studentNames.isEmpty
+                                          ? 'Sin alumnos'
+                                          : practica.studentNames.join(', '),
+                                    ),
+                                    const SizedBox(height: 7),
+                                    _practiceInfoLine(
+                                      context,
+                                      Icons.date_range_outlined,
+                                      '${practica.startDate} - ${practica.endDate}',
+                                    ),
+                                    const SizedBox(height: 7),
+                                    _practiceInfoLine(
+                                      context,
+                                      Icons.location_on_outlined,
+                                      practica.workplace.isEmpty
+                                          ? 'Sin lugar de trabajo'
+                                          : practica.workplace,
+                                    ),
+                                  ],
+                                )
+                              else
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _practiceInfoLine(
+                                        context,
+                                        Icons.people_outline,
+                                        practica.studentNames.isEmpty
+                                            ? 'Sin alumnos'
+                                            : practica.studentNames.join(', '),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: _practiceInfoLine(
+                                        context,
+                                        Icons.date_range_outlined,
+                                        '${practica.startDate} - ${practica.endDate}',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: _practiceInfoLine(
+                                        context,
+                                        Icons.location_on_outlined,
+                                        practica.workplace.isEmpty
+                                            ? 'Sin lugar de trabajo'
+                                            : practica.workplace,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ],
           ),
@@ -546,7 +855,13 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
         for (final p in practicesData) {
           final studentsList = p['students'] as List<dynamic>? ?? [];
           for (final s in studentsList) {
-            assignedStudentIds.add((s['id'] as num).toInt());
+            if (s is Map<String, dynamic>) {
+              final rawId = s['id'];
+              final studentId = rawId is int
+                  ? rawId
+                  : int.tryParse(rawId?.toString() ?? '') ?? 0;
+              assignedStudentIds.add(studentId);
+            }
           }
         }
 
@@ -555,7 +870,9 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
 
         final cursosSet = <String>{};
         for (final a in alumnosLista) {
-          if (a.courseName.isNotEmpty) cursosSet.add(a.courseName);
+          if (a.courseDisplayName.isNotEmpty) {
+            cursosSet.add(a.courseDisplayName);
+          }
         }
 
         final tutoresLista = traineesData.map((json) => SimpleTrainee.fromJson(json)).toList();
@@ -579,7 +896,7 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
 
   List<SimpleStudent> get alumnosFiltrados {
     if (filtroCursoAlumnos == null || filtroCursoAlumnos!.isEmpty) return alumnos;
-    return alumnos.where((a) => a.courseName == filtroCursoAlumnos).toList();
+    return alumnos.where((a) => a.courseDisplayName == filtroCursoAlumnos).toList();
   }
 
   void actualizarTutoresFiltrados() {
@@ -782,7 +1099,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                   style: TextStyle(color: mutedTextColor(context)),
                 ),
                 const SizedBox(height: 24),
-
                 Row(
                   children: [
                     const Text('Alumnos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
@@ -845,7 +1161,7 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                               }
                             });
                           },
-                          title: Text('${alumno.fullName} (${alumno.courseName})'),
+                          title: Text('${alumno.fullName} (${alumno.courseDisplayName})'),
                           controlAffinity: ListTileControlAffinity.leading,
                         );
                       },
@@ -945,7 +1261,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                   validator: (value) => validarTexto(value, 'el lugar de trabajo'),
                 ),
                 const SizedBox(height: 16),
-
                 Row(
                   children: [
                     Expanded(
@@ -988,7 +1303,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
                 Row(
                   children: [
                     Expanded(
@@ -1033,7 +1347,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
                 Row(
                   children: [
                     Expanded(
@@ -1078,7 +1391,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
                 const Text('Horario (Descripción)'),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -1090,7 +1402,6 @@ class CrearPracticaTabState extends State<CrearPracticaTab> {
                   validator: (value) => validarTexto(value, 'el horario'),
                 ),
                 const SizedBox(height: 24),
-
                 SizedBox(
                   width: double.infinity,
                   height: 52,

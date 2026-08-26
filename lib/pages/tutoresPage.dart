@@ -5,7 +5,6 @@ import '../config/api_config.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-
 class CompanyItem {
   final int id;
   final String legalName;
@@ -19,9 +18,9 @@ class CompanyItem {
 
   factory CompanyItem.fromJson(Map<String, dynamic> json) {
     return CompanyItem(
-      id: json['id'],
-      legalName: json['legalName'] ?? '',
-      nif: json['nif'] ?? '',
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      legalName: json['legalName']?.toString() ?? '',
+      nif: json['nif']?.toString() ?? '',
     );
   }
 
@@ -49,16 +48,23 @@ class TraineeItem {
   });
 
   factory TraineeItem.fromJson(Map<String, dynamic> json) {
-    final companyJson = json['company'] as Map<String, dynamic>?;
+    final companyData = json['company'];
+
+    Map<String, dynamic>? companyJson;
+    if (companyData is Map<String, dynamic>) {
+      companyJson = companyData;
+    }
 
     return TraineeItem(
-      id: json['id'],
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-      dni: json['dni'] ?? '',
-      email: json['email'] ?? '',
-      companyId: companyJson?['id'],
-      companyName: companyJson?['legalName'] ?? '',
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      firstName: json['firstName']?.toString() ?? '',
+      lastName: json['lastName']?.toString() ?? '',
+      dni: json['dni']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      companyId: companyJson?['id'] is int
+          ? companyJson!['id'] as int
+          : int.tryParse(companyJson?['id']?.toString() ?? ''),
+      companyName: companyJson?['legalName']?.toString() ?? '',
     );
   }
 }
@@ -633,6 +639,22 @@ class ListadoTutoresTabState extends State<ListadoTutoresTab> {
           ? Colors.white.withOpacity(0.68)
           : Colors.black.withOpacity(0.60);
 
+  String getInitials(TraineeItem tutor) {
+    final nombre = tutor.firstName.trim();
+    final apellido = tutor.lastName.trim();
+
+    if (nombre.isEmpty && apellido.isEmpty) {
+      return '?';
+    }
+
+    if (nombre.isNotEmpty && apellido.isNotEmpty) {
+      return '${nombre[0]}${apellido[0]}'.toUpperCase();
+    }
+
+    final texto = nombre.isNotEmpty ? nombre : apellido;
+    return texto[0].toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (cargandoTutores || cargandoEmpresas) {
@@ -700,65 +722,214 @@ class ListadoTutoresTabState extends State<ListadoTutoresTab> {
                   style: TextStyle(color: mutedTextColor(context)),
                 )
               else
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Nombre')),
-                      DataColumn(label: Text('Apellidos')),
-                      DataColumn(label: Text('DNI')),
-                      DataColumn(label: Text('Email')),
-                      DataColumn(label: Text('Empresa')),
-                      DataColumn(label: Text('Acciones')),
-                    ],
-                    rows: tutoresFiltrados.map((tutor) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(tutor.firstName)),
-                          DataCell(Text(tutor.lastName)),
-                          DataCell(Text(tutor.dni)),
-                          DataCell(Text(tutor.email)),
-                          DataCell(Text(
-                            tutor.companyName.isEmpty
-                                ? 'Sin empresa'
-                                : tutor.companyName,
-                          )),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isMobile = constraints.maxWidth < 650;
+
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: tutoresFiltrados.length,
+                      itemBuilder: (context, index) {
+                        final tutor = tutoresFiltrados[index];
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          elevation: 0,
+                          color: surfaceColor(context),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: borderThemeColor(context),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                IconButton(
-                                  tooltip: 'Editar tutor',
-                                  icon: const Icon(
-                                    Icons.edit_outlined,
-                                    color: Colors.blueAccent,
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor:
+                                  accentColor.withOpacity(0.15),
+                                  child: Text(
+                                    getInitials(tutor),
+                                    style: const TextStyle(
+                                      color: accentColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  onPressed: procesando
-                                      ? null
-                                      : () => editarTutor(tutor),
                                 ),
-                                IconButton(
-                                  tooltip: 'Eliminar tutor',
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: Colors.redAccent,
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        tutor.firstName.isEmpty
+                                            ? '-'
+                                            : '${tutor.firstName} ${tutor.lastName}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 6,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 9,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.withOpacity(0.12),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              tutor.email.isEmpty
+                                                  ? 'Sin email'
+                                                  : tutor.email,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.blue.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 9,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green.withOpacity(0.14),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              tutor.companyName.isEmpty
+                                                  ? 'Sin empresa'
+                                                  : tutor.companyName,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.green.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      if (isMobile)
+                                        Column(
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                          children: [
+                                            _tutorInfoLine(
+                                              context,
+                                              Icons.badge_outlined,
+                                              tutor.dni.isEmpty
+                                                  ? 'Sin DNI'
+                                                  : tutor.dni,
+                                            ),
+                                          ],
+                                        )
+                                      else
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: _tutorInfoLine(
+                                                context,
+                                                Icons.badge_outlined,
+                                                tutor.dni.isEmpty
+                                                    ? 'Sin DNI'
+                                                    : tutor.dni,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                    ],
                                   ),
-                                  onPressed: procesando
-                                      ? null
-                                      : () => borrarTutor(tutor.id),
+                                ),
+                                const SizedBox(width: 8),
+                                PopupMenuButton<String>(
+                                  tooltip: 'Acciones',
+                                  onSelected: (value) {
+                                    if (value == 'editar') {
+                                      editarTutor(tutor);
+                                    } else if (value == 'eliminar') {
+                                      borrarTutor(tutor.id);
+                                    }
+                                  },
+                                  itemBuilder: (context) => const [
+                                    PopupMenuItem<String>(
+                                      value: 'editar',
+                                      child: ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        leading: Icon(Icons.edit_outlined),
+                                        title: Text('Editar'),
+                                      ),
+                                    ),
+                                    PopupMenuItem<String>(
+                                      value: 'eliminar',
+                                      child: ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        leading: Icon(
+                                          Icons.delete_outline,
+                                          color: Colors.redAccent,
+                                        ),
+                                        title: Text('Eliminar'),
+                                      ),
+                                    ),
+                                  ],
+                                  icon: const Icon(Icons.more_vert),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
+                        );
+                      },
+                    );
+                  },
                 ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _tutorInfoLine(
+      BuildContext context,
+      IconData icon,
+      String text,
+      ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: mutedTextColor(context),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              color: mutedTextColor(context),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
