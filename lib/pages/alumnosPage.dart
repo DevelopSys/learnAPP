@@ -12,8 +12,6 @@ import '../model/course.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-
-
 class StudentItem {
   final int id;
   final String firstName;
@@ -24,8 +22,7 @@ class StudentItem {
   final String? birthDate;
   final String? courseName;
   final int? courseId;
-
-  // NUEVO: si el botón de anexo 6 depende de la práctica asociada
+  final int? courseLevel;
   final int? practiceId;
 
   StudentItem({
@@ -38,25 +35,83 @@ class StudentItem {
     this.birthDate,
     this.courseName,
     this.courseId,
+    this.courseLevel,
     this.practiceId,
   });
 
   factory StudentItem.fromJson(Map<String, dynamic> json) {
-    final courseJson = json['course'] as Map<String, dynamic>?;
-    final practiceJson = json['practice'] as Map<String, dynamic>?;
+    final courseData = json['course'];
+    final practiceData = json['practice'];
+
+    Map<String, dynamic>? courseJson;
+    if (courseData is Map<String, dynamic>) {
+      courseJson = courseData;
+    }
+
+    Map<String, dynamic>? practiceJson;
+    if (practiceData is Map<String, dynamic>) {
+      practiceJson = practiceData;
+    }
+
+    int idValue = 0;
+    if (json['id'] is int) {
+      idValue = json['id'] as int;
+    } else if (json['id'] != null) {
+      idValue = int.tryParse(json['id'].toString()) ?? 0;
+    }
+
+    int? courseIdValue;
+    if (courseJson?['id'] is int) {
+      courseIdValue = courseJson!['id'] as int;
+    } else if (courseJson?['id'] != null) {
+      courseIdValue = int.tryParse(courseJson!['id'].toString());
+    }
+
+    int? courseLevelValue;
+    if (courseJson?['level'] is int) {
+      courseLevelValue = courseJson!['level'] as int;
+    } else if (courseJson?['level'] != null) {
+      courseLevelValue = int.tryParse(courseJson!['level'].toString());
+    }
+
+    int? practiceIdValue;
+    if (practiceJson?['id'] is int) {
+      practiceIdValue = practiceJson!['id'] as int;
+    } else if (practiceJson?['id'] != null) {
+      practiceIdValue = int.tryParse(practiceJson!['id'].toString());
+    }
 
     return StudentItem(
-      id: json['id'],
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-      email: json['email'] ?? '',
-      dni: json['dni'] ?? '',
-      address: json['address'],
-      birthDate: json['birthDate'],
-      courseName: courseJson?['name'] ?? '',
-      courseId: courseJson?['id'],
-      practiceId: practiceJson?['id'],
+      id: idValue,
+      firstName: json['firstName']?.toString() ?? '',
+      lastName: json['lastName']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      dni: json['dni']?.toString() ?? '',
+      address: json['address']?.toString(),
+      birthDate: json['birthDate']?.toString(),
+      courseName: courseJson?['name']?.toString(),
+      courseId: courseIdValue,
+      courseLevel: courseLevelValue,
+      practiceId: practiceIdValue,
     );
+  }
+
+  String get fullName {
+    return '$firstName $lastName'.trim();
+  }
+
+  String get courseDisplayName {
+    final name = courseName?.trim() ?? '';
+
+    if (name.isEmpty) {
+      return 'Sin curso';
+    }
+
+    if (courseLevel == null) {
+      return name;
+    }
+
+    return '${courseLevel}º $name';
   }
 }
 
@@ -511,7 +566,7 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
                           items: cursos.map((curso) {
                             return DropdownMenuItem<int>(
                               value: curso.id,
-                              child: Text(curso.name),
+                              child: Text('${curso.level}º ${curso.name}'),
                             );
                           }).toList(),
                           onChanged: (value) {
@@ -633,6 +688,69 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
           ? Colors.white.withOpacity(0.68)
           : Colors.black.withOpacity(0.60);
 
+  String getInitials(StudentItem alumno) {
+    final nombre = alumno.firstName.trim();
+    final apellido = alumno.lastName.trim();
+
+    if (nombre.isEmpty && apellido.isEmpty) {
+      return '?';
+    }
+
+    if (nombre.isNotEmpty && apellido.isNotEmpty) {
+      return '${nombre[0]}${apellido[0]}'.toUpperCase();
+    }
+
+    final texto = nombre.isNotEmpty ? nombre : apellido;
+    return texto[0].toUpperCase();
+  }
+
+  Widget buildCourseBadge(StudentItem alumno) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        alumno.courseDisplayName,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Colors.blue.shade700,
+        ),
+      ),
+    );
+  }
+
+  Widget buildInfoLine({
+    required IconData icon,
+    required String text,
+  }) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: mutedTextColor(context),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              color: mutedTextColor(context),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (cargandoAlumnos || cargandoCursos) {
@@ -687,7 +805,10 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
                           ...cursos.map((curso) {
                             return DropdownMenuItem<int?>(
                               value: curso.id,
-                              child: Text(curso.name),
+                              child: Text(
+                                '${curso.level}º ${curso.name}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             );
                           }),
                         ],
@@ -785,56 +906,202 @@ class ListadoAlumnosTabState extends State<ListadoAlumnosTab> {
                   style: TextStyle(color: mutedTextColor(context)),
                 )
               else
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Nombre')),
-                      DataColumn(label: Text('Apellidos')),
-                      DataColumn(label: Text('Correo')),
-                      DataColumn(label: Text('DNI')),
-                      DataColumn(label: Text('Curso')),
-                      DataColumn(label: Text('Acciones')),
-                    ],
-                    rows: alumnosFiltrados.map((alumno) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(alumno.firstName)),
-                          DataCell(Text(alumno.lastName)),
-                          DataCell(Text(alumno.email)),
-                          DataCell(Text(alumno.dni)),
-                          DataCell(Text(alumno.courseName ?? 'Sin curso')),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isMobile = constraints.maxWidth < 650;
+
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: alumnosFiltrados.length,
+                      itemBuilder: (context, index) {
+                        final alumno = alumnosFiltrados[index];
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          elevation: 0,
+                          color: surfaceColor(context),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: borderThemeColor(context),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                IconButton(
-                                  tooltip: 'Editar alumno',
-                                  icon: const Icon(
-                                    Icons.edit_outlined,
-                                    color: Colors.blueAccent,
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor:
+                                  accentColor.withOpacity(0.15),
+                                  child: Text(
+                                    getInitials(alumno),
+                                    style: const TextStyle(
+                                      color: accentColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  onPressed: procesando
-                                      ? null
-                                      : () => editarAlumno(alumno),
                                 ),
-                                IconButton(
-                                  tooltip: 'Eliminar alumno',
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: Colors.redAccent,
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        alumno.fullName.isEmpty
+                                            ? '-'
+                                            : alumno.fullName,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 6,
+                                        children: [
+                                          buildCourseBadge(alumno),
+                                          if (alumno.practiceId != null)
+                                            Container(
+                                              padding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 9,
+                                                vertical: 4,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green
+                                                    .withOpacity(0.14),
+                                                borderRadius:
+                                                BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                'Prácticas asignadas',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color:
+                                                  Colors.green.shade700,
+                                                ),
+                                              ),
+                                            )
+                                          else
+                                            Container(
+                                              padding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 9,
+                                                vertical: 4,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.orange
+                                                    .withOpacity(0.16),
+                                                borderRadius:
+                                                BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                'Sin prácticas',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color:
+                                                  Colors.orange.shade800,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      if (isMobile)
+                                        Column(
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                          children: [
+                                            buildInfoLine(
+                                              icon: Icons.email_outlined,
+                                              text: alumno.email.isEmpty
+                                                  ? 'Sin correo'
+                                                  : alumno.email,
+                                            ),
+                                            const SizedBox(height: 5),
+                                            buildInfoLine(
+                                              icon: Icons.badge_outlined,
+                                              text: alumno.dni.isEmpty
+                                                  ? 'Sin DNI'
+                                                  : alumno.dni,
+                                            ),
+                                          ],
+                                        )
+                                      else
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: buildInfoLine(
+                                                icon: Icons.email_outlined,
+                                                text: alumno.email.isEmpty
+                                                    ? 'Sin correo'
+                                                    : alumno.email,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: buildInfoLine(
+                                                icon: Icons.badge_outlined,
+                                                text: alumno.dni.isEmpty
+                                                    ? 'Sin DNI'
+                                                    : alumno.dni,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                    ],
                                   ),
-                                  onPressed: procesando
-                                      ? null
-                                      : () => borrarAlumno(alumno.id),
+                                ),
+                                const SizedBox(width: 8),
+                                PopupMenuButton<String>(
+                                  tooltip: 'Acciones',
+                                  onSelected: (value) {
+                                    if (value == 'editar') {
+                                      editarAlumno(alumno);
+                                    } else if (value == 'eliminar') {
+                                      borrarAlumno(alumno.id);
+                                    }
+                                  },
+                                  itemBuilder: (context) => const [
+                                    PopupMenuItem<String>(
+                                      value: 'editar',
+                                      child: ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        leading: Icon(Icons.edit_outlined),
+                                        title: Text('Editar'),
+                                      ),
+                                    ),
+                                    PopupMenuItem<String>(
+                                      value: 'eliminar',
+                                      child: ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        leading: Icon(
+                                          Icons.delete_outline,
+                                          color: Colors.redAccent,
+                                        ),
+                                        title: Text('Eliminar'),
+                                      ),
+                                    ),
+                                  ],
+                                  icon: const Icon(Icons.more_vert),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
+                        );
+                      },
+                    );
+                  },
                 ),
             ],
           ),
@@ -1209,7 +1476,7 @@ class _AgregarAlumnoTabState extends State<AgregarAlumnoTab> {
                   items: ciclos.map((curso) {
                     return DropdownMenuItem<Course>(
                       value: curso,
-                      child: Text(curso.name),
+                      child: Text('${curso.level}º ${curso.name}'),
                     );
                   }).toList(),
                   onChanged: (value) {

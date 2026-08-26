@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:ui';
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -35,9 +34,6 @@ import 'package:learnapp/pages/userAdminPage.dart'
 
 import '../config/api_config.dart';
 
-
-
-
 class Maindashboard extends StatefulWidget {
   const Maindashboard({super.key});
 
@@ -70,7 +66,10 @@ class _MainPageState extends State<Maindashboard> {
       filteredStudents.where((s) => !s.hasPractice).length;
 
   List<String> get availableCourses {
-    final courses = homeStudents.map((s) => s.courseName).toSet().toList();
+    final courses = homeStudents
+        .map((s) => s.courseDisplayName)
+        .toSet()
+        .toList();
     courses.sort();
     return courses;
   }
@@ -79,7 +78,7 @@ class _MainPageState extends State<Maindashboard> {
     return homeStudents.where((student) {
       final matchesPending = !onlyPendingFilter || !student.hasPractice;
       final matchesCourse = selectedCourseFilters.isEmpty ||
-          selectedCourseFilters.contains(student.courseName);
+          selectedCourseFilters.contains(student.courseDisplayName);
       return matchesPending && matchesCourse;
     }).toList();
   }
@@ -115,7 +114,8 @@ class _MainPageState extends State<Maindashboard> {
 
       print('STATUS /me: ${meResponse.statusCode}');
       print('BODY /me: ${meResponse.body}');
-      print('=== TOKEN RECIBIDA: $token');  // AÑ¾ADE ESTO
+      print('=== TOKEN RECIBIDA: $token');
+
 
 
       if (!mounted) return;
@@ -136,6 +136,9 @@ class _MainPageState extends State<Maindashboard> {
           loading = false;
           errorMessage = 'No se pudo cargar la información del usuario';
         });
+
+
+
         return;
       }
 
@@ -180,6 +183,10 @@ class _MainPageState extends State<Maindashboard> {
           loadedStudents = decoded
               .map((item) => HomeStudentItem.fromJson(item))
               .toList();
+
+          for (var s in loadedStudents.take(3)) {
+            print('ALUMNO: ${s.fullName} | courseName: ${s.courseName} | level: ${s.level} | display: ${s.courseDisplayName}');
+          }
         } else {
           print('La respuesta de /api/home/students no es una lista');
         }
@@ -209,7 +216,7 @@ class _MainPageState extends State<Maindashboard> {
         loading = false;
       });
     } catch (e) {
-      print('EXCEPCIÓ¢N cargarDatosUsuario: $e');
+      print('EXCEPCIÓN cargarDatosUsuario: $e');
       if (!mounted) return;
       setState(() {
         loading = false;
@@ -254,7 +261,7 @@ class _MainPageState extends State<Maindashboard> {
           pageBuilder: (_) => TutoresPage(jwt: jwt),
         ),
         _DrawerItem(
-          title: 'Prá¡¢cticas',
+          title: 'Prácticas',
           icon: Icons.work_history,
           pageBuilder: (_) => PracticasPage(jwt: jwt),
         ),
@@ -284,7 +291,7 @@ class _MainPageState extends State<Maindashboard> {
           pageBuilder: (_) => ResultadosAprendizajePage(jwt: jwt),
         ),
         _DrawerItem(
-          title: 'Prá¡¢cticas',
+          title: 'Prácticas',
           icon: Icons.work_history,
           pageBuilder: (_) => PracticasPage(jwt: jwt),
         ),
@@ -486,9 +493,9 @@ class _MainPageState extends State<Maindashboard> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  student.courseName.isEmpty
+                                  student.courseDisplayName.isEmpty
                                       ? '-'
-                                      : student.courseName,
+                                      : student.courseDisplayName,
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
@@ -831,8 +838,8 @@ class _MainPageState extends State<Maindashboard> {
             ),
           IconButton(
             tooltip: canManageCenterInfo
-                ? 'Configuracií³¢n general'
-                : 'Solo administracií³¢n puede acceder a esta opcií³¢n',
+                ? 'Configuración general'
+                : 'Solo administración puede acceder a esta opción',
             onPressed: canManageCenterInfo
                 ? () {
               Navigator.of(context).push(
@@ -853,7 +860,7 @@ class _MainPageState extends State<Maindashboard> {
             ),
           ),
           IconButton(
-            tooltip: 'cerrar sesií³¢n',
+            tooltip: 'cerrar sesión',
             onPressed: logout,
             icon: const Icon(Icons.logout),
           ),
@@ -891,7 +898,6 @@ class _MainPageState extends State<Maindashboard> {
                           : Colors.black54,
                     ),
                   ),
-
                 ],
               ),
             ),
@@ -928,26 +934,44 @@ class HomeStudentItem {
   final int id;
   final String fullName;
   final String courseName;
+  final String? level;
   final bool hasPractice;
   final String? companyName;
+  final String courseDisplayName;
 
   HomeStudentItem({
     required this.id,
     required this.fullName,
     required this.courseName,
+    this.level,
     required this.hasPractice,
     required this.companyName,
+    required this.courseDisplayName,
   });
 
   factory HomeStudentItem.fromJson(Map<String, dynamic> json) {
+    final rawLevel = json['level'];
+    String? levelStr;
+    if (rawLevel != null) {
+      levelStr = rawLevel.toString();
+    }
+
+    final String courseNameValue = (json['courseName'] ?? '').toString();
+
+    final String courseDisplayNameValue = levelStr != null && levelStr.isNotEmpty
+        ? '$levelStrº $courseNameValue'
+        : courseNameValue;
+
     return HomeStudentItem(
       id: json['id'] is int
           ? json['id']
           : int.tryParse(json['id'].toString()) ?? 0,
       fullName: (json['fullName'] ?? '').toString(),
-      courseName: (json['courseName'] ?? '').toString(),
+      courseName: courseNameValue,
+      level: levelStr,
       hasPractice: json['hasPractice'] == true,
       companyName: json['companyName']?.toString(),
+      courseDisplayName: courseDisplayNameValue,
     );
   }
 }

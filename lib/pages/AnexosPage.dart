@@ -9,8 +9,6 @@ import '../config/api_config.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-
-
 class AnexoCompanyItem {
   final int id;
   final String legalName;
@@ -30,11 +28,13 @@ class AnexoCompanyItem {
     final agreementJson = json['agreement'] as Map<String, dynamic>?;
 
     return AnexoCompanyItem(
-      id: json['id'],
-      legalName: json['legalName'] ?? '',
-      agreementNumber: agreementJson?['number'] ?? '',
-      agreementDate: agreementJson?['signDate'] ?? '',
-      agreementId: agreementJson?['id'],
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      legalName: json['legalName']?.toString() ?? '',
+      agreementNumber: agreementJson?['number']?.toString() ?? '',
+      agreementDate: agreementJson?['signDate']?.toString() ?? '',
+      agreementId: agreementJson?['id'] is int
+          ? agreementJson!['id'] as int
+          : int.tryParse(agreementJson?['id']?.toString() ?? ''),
     );
   }
 }
@@ -63,8 +63,11 @@ class PracticeStudentItem {
     final lastName = (json['lastName'] ?? '').toString().trim();
 
     return PracticeStudentItem(
-      id: (json['id'] as num).toInt(),
-      firstName: firstName,
+      id: json['id'] is int
+          ? json['id'] as int
+          : json['id'] is num
+          ? (json['id'] as num).toInt()
+          : int.tryParse(json['id'].toString()) ?? 0,      firstName: firstName,
       lastName: lastName,
       fullName: '$firstName $lastName'.trim().isEmpty
           ? '—'
@@ -125,14 +128,19 @@ class PracticeItem {
     return PracticeItem(
       students: students,
       studentNameList: namesList,
-      id: (json['id'] as num).toInt(),
-      studentNames: nombresAlumnos.isEmpty ? '—' : nombresAlumnos,
+      id: json['id'] is int
+          ? json['id'] as int
+          : json['id'] is num
+          ? (json['id'] as num).toInt()
+          : int.tryParse(json['id'].toString()) ?? 0,      studentNames: nombresAlumnos.isEmpty ? '—' : nombresAlumnos,
       companyName:
       (company?['legalName'] ?? company?['name'] ?? '—').toString(),
       cycleName: ciclo.isEmpty ? '—' : ciclo,
       startDate: (json['startDate'] ?? '').toString(),
       endDate: (json['endDate'] ?? '').toString(),
-      agreementId: agreement?['id'] as int?,
+      agreementId: agreement?['id'] is int
+          ? agreement!['id'] as int
+          : int.tryParse(agreement?['id']?.toString() ?? ''),
       agreementNumber: (agreement?['number'] ?? '').toString(),
     );
   }
@@ -411,62 +419,124 @@ class _AnexosConveniosTabState extends State<_AnexosConveniosTab> {
                 style: TextStyle(color: mutedTextColor(context)),
               ),
               const SizedBox(height: 24),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: const [
-                    DataColumn(label: Text('Nombre empresa')),
-                    DataColumn(label: Text('Nº convenio')),
-                    DataColumn(label: Text('Fecha convenio')),
-                    DataColumn(label: Text('Acciones')),
-                  ],
-                  rows: empresas.map((empresa) {
-                    final tieneConvenio =
-                        empresa.agreementNumber.trim().isNotEmpty &&
-                            empresa.agreementId != null;
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 700;
 
-                    return DataRow(cells: [
-                      DataCell(Text(empresa.legalName)),
-                      DataCell(Text(
-                        empresa.agreementNumber.isEmpty
-                            ? '-'
-                            : empresa.agreementNumber,
-                      )),
-                      DataCell(Text(formatearFecha(empresa.agreementDate))),
-                      DataCell(
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: tieneConvenio
-                                ? accentColor
-                                : Colors.grey.shade400,
-                            foregroundColor: Colors.black,
-                          ),
-                          onPressed: !tieneConvenio ||
-                              descargandoCompanyId == empresa.id
-                              ? null
-                              : () => descargarConvenio(empresa),
-                          icon: descargandoCompanyId == empresa.id
-                              ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                              AlwaysStoppedAnimation<Color>(
-                                  Colors.black),
-                            ),
-                          )
-                              : const Icon(Icons.download_outlined),
-                          label: Text(
-                            descargandoCompanyId == empresa.id
-                                ? 'Generando...'
-                                : 'Descargar convenio',
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: empresas.length,
+                    itemBuilder: (context, index) {
+                      final empresa = empresas[index];
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 0,
+                        color: surfaceColor(context),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(
+                            color: borderThemeColor(context),
                           ),
                         ),
-                      ),
-                    ]);
-                  }).toList(),
-                ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 25,
+                                    backgroundColor:
+                                    accentColor.withOpacity(0.15),
+                                    child: const Icon(
+                                      Icons.business_outlined,
+                                      color: accentColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          empresa.legalName.isEmpty
+                                              ? 'Sin nombre'
+                                              : empresa.legalName,
+                                          style: const TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          empresa.agreementNumber.isEmpty
+                                              ? 'Sin convenio'
+                                              : 'Convenio: ${empresa.agreementNumber}',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: mutedTextColor(context),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Fecha: ${formatearFecha(empresa.agreementDate)}',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: mutedTextColor(context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                      empresa.agreementNumber.trim().isNotEmpty &&
+                                          empresa.agreementId != null
+                                          ? accentColor
+                                          : Colors.grey.shade400,
+                                      foregroundColor: Colors.black,
+                                    ),
+                                    onPressed:
+                                    empresa.agreementNumber.trim().isEmpty ||
+                                        empresa.agreementId == null ||
+                                        descargandoCompanyId ==
+                                            empresa.id
+                                        ? null
+                                        : () => descargarConvenio(empresa),
+                                    icon: descargandoCompanyId == empresa.id
+                                        ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                        AlwaysStoppedAnimation<Color>(
+                                            Colors.black),
+                                      ),
+                                    )
+                                        : const Icon(Icons.download_outlined),
+                                    label: Text(
+                                      descargandoCompanyId == empresa.id
+                                          ? 'Generando...'
+                                          : 'Descargar',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ],
           ),
@@ -879,8 +949,7 @@ class _AnexosPracticasTabState extends State<_AnexosPracticasTab> {
         foregroundColor: textColor,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       ),
-      onPressed:
-      isLoading ? null : () => _descargarAnexoAlumno(p, student, tipo),
+      onPressed: isLoading ? null : () => _descargarAnexoAlumno(p, student, tipo),
       child: isLoading
           ? SizedBox(
         width: 16,

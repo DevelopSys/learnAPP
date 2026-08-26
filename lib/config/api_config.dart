@@ -1,7 +1,7 @@
 class ApiConfig {
   static const String baseUrl =
-  'https://learnback-c8vp.onrender.com';
-      /*'http://localhost:8080';*/
+  /*'https://learnback-c8vp.onrender.com';*/
+      'http://localhost:8080';
   /*Actualizacion realizada para la gestion de ciclos*/
 
   static const String apiPrefix = '/api';

@@ -10,8 +10,6 @@ import '../config/api_config.dart';
 
 const Color accentColor = Color(0xFF3ECF8E);
 
-
-
 class RepresentanteData {
   final TextEditingController nombreController;
   final TextEditingController dniController;
@@ -39,6 +37,7 @@ class CompanyItem {
   final String phone;
   final String agreementNumber;
   final String agreementDate;
+  final List<RepresentanteData> representatives;
 
   CompanyItem({
     required this.id,
@@ -53,24 +52,43 @@ class CompanyItem {
     required this.phone,
     required this.agreementNumber,
     required this.agreementDate,
+    this.representatives = const [],
   });
 
   factory CompanyItem.fromJson(Map<String, dynamic> json) {
-    final agreementJson = json['agreement'] as Map<String, dynamic>?;
+    final agreementData = json['agreement'];
+
+    Map<String, dynamic>? agreementJson;
+    if (agreementData is Map<String, dynamic>) {
+      agreementJson = agreementData;
+    }
+
+    final representativesJson = json['representatives'] as List<dynamic>? ?? [];
+    final representatives = <RepresentanteData>[];
+
+    for (final rep in representativesJson) {
+      if (rep is Map<String, dynamic>) {
+        final repData = RepresentanteData();
+        repData.nombreController.text = rep['fullName']?.toString() ?? '';
+        repData.dniController.text = rep['dni']?.toString() ?? '';
+        representatives.add(repData);
+      }
+    }
 
     return CompanyItem(
-      id: json['id'],
-      nif: json['nif'] ?? '',
-      legalName: json['legalName'] ?? '',
-      activity: json['activity'] ?? '',
-      street: json['street'] ?? '',
-      postalCode: json['postalCode'] ?? '',
-      city: json['city'] ?? '',
-      province: json['province'] ?? '',
-      country: json['country'] ?? '',
-      phone: json['phone'] ?? '',
-      agreementNumber: agreementJson?['number'] ?? '',
-      agreementDate: agreementJson?['signDate'] ?? '',
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      nif: json['nif']?.toString() ?? '',
+      legalName: json['legalName']?.toString() ?? '',
+      activity: json['activity']?.toString() ?? '',
+      street: json['street']?.toString() ?? '',
+      postalCode: json['postalCode']?.toString() ?? '',
+      city: json['city']?.toString() ?? '',
+      province: json['province']?.toString() ?? '',
+      country: json['country']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      agreementNumber: agreementJson?['number']?.toString() ?? '',
+      agreementDate: agreementJson?['signDate']?.toString() ?? '',
+      representatives: representatives,
     );
   }
 }
@@ -231,6 +249,384 @@ class ListadoEmpresasTabState extends State<ListadoEmpresasTab> {
           ? Colors.white.withOpacity(0.68)
           : Colors.black.withOpacity(0.60);
 
+  Future<void> editarEmpresa(CompanyItem empresa) async {
+    final nifController = TextEditingController(text: empresa.nif);
+    final nombreLegalController = TextEditingController(text: empresa.legalName);
+    final actividadController = TextEditingController(text: empresa.activity);
+    final calleController = TextEditingController(text: empresa.street);
+    final cpController = TextEditingController(text: empresa.postalCode);
+    final provinciaController = TextEditingController(text: empresa.province);
+    final localidadController = TextEditingController(text: empresa.city);
+    final paisController = TextEditingController(text: empresa.country);
+    final telefonoController = TextEditingController(text: empresa.phone);
+
+    final representantes = <RepresentanteData>[];
+    for (final rep in empresa.representatives) {
+      representantes.add(RepresentanteData());
+      representantes.last.nombreController.text = rep.nombreController.text;
+      representantes.last.dniController.text = rep.dniController.text;
+    }
+
+    if (representantes.isEmpty) {
+      representantes.add(RepresentanteData());
+    }
+
+    final formKey = GlobalKey<FormState>();
+    final List<String> provincias = const [
+      'Álava', 'Albacete', 'Alicante', 'Almería', 'Asturias', 'Ávila',
+      'Badajoz', 'Barcelona', 'Burgos', 'Cáceres', 'Cádiz', 'Cantabria',
+      'Castellón', 'Ciudad Real', 'Córdoba', 'La Coruña', 'Cuenca',
+      'Gerona', 'Granada', 'Guadalajara', 'Guipúzcoa', 'Huelva', 'Huesca',
+      'Islas Baleares', 'Jaén', 'León', 'Lérida', 'Lugo', 'Madrid',
+      'Málaga', 'Murcia', 'Navarra', 'Orense', 'Palencia', 'Las Palmas',
+      'Pontevedra', 'La Rioja', 'Salamanca', 'Segovia', 'Sevilla', 'Soria',
+      'Tarragona', 'Santa Cruz de Tenerife', 'Teruel', 'Toledo', 'Valencia',
+      'Valladolid', 'Vizcaya', 'Zamora', 'Zaragoza',
+    ];
+
+    bool mostrandoSugerenciasProvincia = false;
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Editar empresa'),
+              content: SizedBox(
+                width: 600,
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: nifController,
+                          decoration: const InputDecoration(
+                            labelText: 'NIF',
+                            prefixIcon: Icon(Icons.badge_outlined),
+                          ),
+                          validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Introduce el NIF'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: nombreLegalController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre legal',
+                            prefixIcon: Icon(Icons.business_outlined),
+                          ),
+                          validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Introduce el nombre legal'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: actividadController,
+                          decoration: const InputDecoration(
+                            labelText: 'Actividad',
+                            prefixIcon: Icon(Icons.work_outline),
+                          ),
+                          validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Introduce la actividad'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: calleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Calle',
+                            prefixIcon: Icon(Icons.location_on_outlined),
+                          ),
+                          validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Introduce la calle'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: cpController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Código postal',
+                                  prefixIcon: Icon(Icons.markunread_mailbox_outlined),
+                                ),
+                                validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                    ? 'Introduce el CP'
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: provinciaController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Provincia',
+                                  prefixIcon: Icon(Icons.map_outlined),
+                                ),
+                                onChanged: (value) {
+                                  setStateDialog(() {
+                                    mostrandoSugerenciasProvincia = value.trim().isNotEmpty;
+                                  });
+                                },
+                                validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                    ? 'Introduce la provincia'
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (mostrandoSugerenciasProvincia)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            constraints: const BoxConstraints(maxHeight: 150),
+                            decoration: BoxDecoration(
+                              color: surfaceColor(context),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: borderThemeColor(context)),
+                            ),
+                            child: ListView.builder(
+                              itemCount: provincias.length,
+                              itemBuilder: (context, index) {
+                                final p = provincias[index];
+                                return ListTile(
+                                  title: Text(p),
+                                  onTap: () {
+                                    setStateDialog(() {
+                                      provinciaController.text = p;
+                                      mostrandoSugerenciasProvincia = false;
+                                      if (localidadController.text.trim().isEmpty) {
+                                        localidadController.text = p;
+                                      }
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: localidadController,
+                          decoration: const InputDecoration(
+                            labelText: 'Localidad',
+                            prefixIcon: Icon(Icons.location_city_outlined),
+                          ),
+                          validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Introduce la localidad'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: paisController,
+                          decoration: const InputDecoration(
+                            labelText: 'País',
+                            prefixIcon: Icon(Icons.public_outlined),
+                          ),
+                          validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Introduce el país'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: telefonoController,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Teléfono',
+                            prefixIcon: Icon(Icons.phone_outlined),
+                          ),
+                          validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Introduce el teléfono'
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Representantes',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        ...List.generate(representantes.length, (index) {
+                          return Card(
+                            margin: const EdgeInsets.only(top: 8),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text('Representante ${index + 1}'),
+                                      const Spacer(),
+                                      if (representantes.length > 1)
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                          onPressed: () {
+                                            setStateDialog(() {
+                                              representantes[index].dispose();
+                                              representantes.removeAt(index);
+                                            });
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextField(
+                                    controller: representantes[index].nombreController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Nombre',
+                                      prefixIcon: Icon(Icons.person_outline),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextField(
+                                    controller: representantes[index].dniController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'DNI',
+                                      prefixIcon: Icon(Icons.credit_card_outlined),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        TextButton.icon(
+                          onPressed: () {
+                            setStateDialog(() {
+                              representantes.add(RepresentanteData());
+                            });
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('Añadir representante'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      Navigator.of(context).pop(true);
+                    }
+                  },
+                  child: const Text('Guardar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmado != true) {
+      nifController.dispose();
+      nombreLegalController.dispose();
+      actividadController.dispose();
+      calleController.dispose();
+      cpController.dispose();
+      provinciaController.dispose();
+      localidadController.dispose();
+      paisController.dispose();
+      telefonoController.dispose();
+      for (final rep in representantes) {
+        rep.dispose();
+      }
+      return;
+    }
+
+    setState(() {
+      cargando = true;
+    });
+
+    try {
+      final url = Uri.parse('${ApiConfig.companies}/${empresa.id}');
+
+      final body = jsonEncode({
+        'nif': nifController.text.trim(),
+        'legalName': nombreLegalController.text.trim(),
+        'activity': actividadController.text.trim(),
+        'street': calleController.text.trim(),
+        'postalCode': cpController.text.trim(),
+        'city': provinciaController.text.trim(),
+        'province': localidadController.text.trim(),
+        'country': paisController.text.trim(),
+        'phone': telefonoController.text.trim(),
+        'representatives': representantes.map((rep) {
+          return {
+            'fullName': rep.nombreController.text.trim(),
+            'dni': rep.dniController.text.trim(),
+          };
+        }).toList(),
+      });
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer ${widget.jwt}',
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Empresa actualizada correctamente'),
+            backgroundColor: accentColor,
+          ),
+        );
+        await cargarEmpresas();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar: ${response.body}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error de conexión: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      setState(() {
+        cargando = false;
+      });
+
+      nifController.dispose();
+      nombreLegalController.dispose();
+      actividadController.dispose();
+      calleController.dispose();
+      cpController.dispose();
+      provinciaController.dispose();
+      localidadController.dispose();
+      paisController.dispose();
+      telefonoController.dispose();
+      for (final rep in representantes) {
+        rep.dispose();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (cargando) {
@@ -270,61 +666,261 @@ class ListadoEmpresasTabState extends State<ListadoEmpresasTab> {
                 style: TextStyle(color: mutedTextColor(context)),
               ),
               const SizedBox(height: 24),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: const [
-                    DataColumn(label: Text('NIF')),
-                    DataColumn(label: Text('Nombre legal')),
-                    DataColumn(label: Text('Actividad')),
-                    DataColumn(label: Text('Calle')),
-                    DataColumn(label: Text('CP')),
-                    DataColumn(label: Text('Provincia')),
-                    DataColumn(label: Text('Localidad')),
-                    DataColumn(label: Text('País')),
-                    DataColumn(label: Text('Teléfono')),
-                    DataColumn(label: Text('Nº convenio')),
-                    DataColumn(label: Text('Fecha convenio')),
-                  ],
-                  rows: empresas.map((empresa) {
-                    return DataRow(
-                      cells: [
-                        DataCell(Text(empresa.nif)),
-                        DataCell(Text(empresa.legalName)),
-                        DataCell(Text(empresa.activity)),
-                        DataCell(Text(empresa.street)),
-                        DataCell(Text(empresa.postalCode)),
-                        DataCell(Text(empresa.city)),
-                        DataCell(
-                          Text(
-                            empresa.province.isEmpty
-                                ? '-'
-                                : empresa.province,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 700;
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: empresas.length,
+                    itemBuilder: (context, index) {
+                      final empresa = empresas[index];
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 0,
+                        color: surfaceColor(context),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(
+                            color: borderThemeColor(context),
                           ),
                         ),
-                        DataCell(
-                          Text(
-                            empresa.country.isEmpty ? '-' : empresa.country,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 25,
+                                    backgroundColor: accentColor.withOpacity(0.15),
+                                    child: const Icon(
+                                      Icons.business_outlined,
+                                      color: accentColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          empresa.legalName.isEmpty
+                                              ? 'Sin nombre'
+                                              : empresa.legalName,
+                                          style: const TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          empresa.nif.isEmpty
+                                              ? 'Sin NIF'
+                                              : 'NIF: ${empresa.nif}',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: mutedTextColor(context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  PopupMenuButton<String>(
+                                    tooltip: 'Acciones',
+                                    onSelected: (value) {
+                                      if (value == 'editar') {
+                                        editarEmpresa(empresa);
+                                      }
+                                    },
+                                    itemBuilder: (context) => const [
+                                      PopupMenuItem<String>(
+                                        value: 'editar',
+                                        child: ListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          leading: Icon(Icons.edit_outlined),
+                                          title: Text('Editar'),
+                                        ),
+                                      ),
+                                    ],
+                                    icon: const Icon(Icons.more_vert),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 9,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      empresa.activity.isEmpty
+                                          ? 'Sin actividad'
+                                          : empresa.activity,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                  if (empresa.agreementNumber.isNotEmpty)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 9,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.14),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        'Convenio: ${empresa.agreementNumber}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.green.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              if (isMobile)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _companyInfoLine(
+                                      context,
+                                      Icons.location_on_outlined,
+                                      empresa.street.isEmpty
+                                          ? 'Sin dirección'
+                                          : empresa.street,
+                                    ),
+                                    const SizedBox(height: 7),
+                                    _companyInfoLine(
+                                      context,
+                                      Icons.markunread_mailbox_outlined,
+                                      '${empresa.postalCode} ${empresa.city}'.trim().isEmpty
+                                          ? 'Sin CP/localidad'
+                                          : '${empresa.postalCode} ${empresa.city}',
+                                    ),
+                                    const SizedBox(height: 7),
+                                    _companyInfoLine(
+                                      context,
+                                      Icons.map_outlined,
+                                      empresa.province.isEmpty
+                                          ? 'Sin provincia'
+                                          : empresa.province,
+                                    ),
+                                    const SizedBox(height: 7),
+                                    _companyInfoLine(
+                                      context,
+                                      Icons.phone_outlined,
+                                      empresa.phone.isEmpty
+                                          ? 'Sin teléfono'
+                                          : empresa.phone,
+                                    ),
+                                  ],
+                                )
+                              else
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _companyInfoLine(
+                                        context,
+                                        Icons.location_on_outlined,
+                                        empresa.street.isEmpty
+                                            ? 'Sin dirección'
+                                            : empresa.street,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: _companyInfoLine(
+                                        context,
+                                        Icons.markunread_mailbox_outlined,
+                                        '${empresa.postalCode} ${empresa.city}'.trim().isEmpty
+                                            ? 'Sin CP/localidad'
+                                            : '${empresa.postalCode} ${empresa.city}',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: _companyInfoLine(
+                                        context,
+                                        Icons.map_outlined,
+                                        empresa.province.isEmpty
+                                            ? 'Sin provincia'
+                                            : empresa.province,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: _companyInfoLine(
+                                        context,
+                                        Icons.phone_outlined,
+                                        empresa.phone.isEmpty
+                                            ? 'Sin teléfono'
+                                            : empresa.phone,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
                           ),
                         ),
-                        DataCell(Text(empresa.phone)),
-                        DataCell(
-                          Text(
-                            empresa.agreementNumber.isEmpty
-                                ? '-'
-                                : empresa.agreementNumber,
-                          ),
-                        ),
-                        DataCell(Text(formatearFecha(empresa.agreementDate))),
-                      ],
-                    );
-                  }).toList(),
-                ),
+                      );
+                    },
+                  );
+                },
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _companyInfoLine(
+      BuildContext context,
+      IconData icon,
+      String text,
+      ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 17,
+          color: mutedTextColor(context),
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              color: mutedTextColor(context),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -362,56 +958,15 @@ class _AgregarEmpresaTabState extends State<AgregarEmpresaTab> {
   bool mostrandoSugerenciasProvincia = false;
 
   final List<String> _provincias = const [
-    'Álava',
-    'Albacete',
-    'Alicante',
-    'Almería',
-    'Asturias',
-    'Ávila',
-    'Badajoz',
-    'Barcelona',
-    'Burgos',
-    'Cáceres',
-    'Cádiz',
-    'Cantabria',
-    'Castellón',
-    'Ciudad Real',
-    'Córdoba',
-    'La Coruña',
-    'Cuenca',
-    'Gerona',
-    'Granada',
-    'Guadalajara',
-    'Guipúzcoa',
-    'Huelva',
-    'Huesca',
-    'Islas Baleares',
-    'Jaén',
-    'León',
-    'Lérida',
-    'Lugo',
-    'Madrid',
-    'Málaga',
-    'Murcia',
-    'Navarra',
-    'Orense',
-    'Palencia',
-    'Las Palmas',
-    'Pontevedra',
-    'La Rioja',
-    'Salamanca',
-    'Segovia',
-    'Sevilla',
-    'Soria',
-    'Tarragona',
-    'Santa Cruz de Tenerife',
-    'Teruel',
-    'Toledo',
-    'Valencia',
-    'Valladolid',
-    'Vizcaya',
-    'Zamora',
-    'Zaragoza',
+    'Álava', 'Albacete', 'Alicante', 'Almería', 'Asturias', 'Ávila',
+    'Badajoz', 'Barcelona', 'Burgos', 'Cáceres', 'Cádiz', 'Cantabria',
+    'Castellón', 'Ciudad Real', 'Córdoba', 'La Coruña', 'Cuenca',
+    'Gerona', 'Granada', 'Guadalajara', 'Guipúzcoa', 'Huelva', 'Huesca',
+    'Islas Baleares', 'Jaén', 'León', 'Lérida', 'Lugo', 'Madrid',
+    'Málaga', 'Murcia', 'Navarra', 'Orense', 'Palencia', 'Las Palmas',
+    'Pontevedra', 'La Rioja', 'Salamanca', 'Segovia', 'Sevilla', 'Soria',
+    'Tarragona', 'Santa Cruz de Tenerife', 'Teruel', 'Toledo', 'Valencia',
+    'Valladolid', 'Vizcaya', 'Zamora', 'Zaragoza',
   ];
 
   Color surfaceColor(BuildContext context) =>
